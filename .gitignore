@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+scraper/node_modules/
+
+# Build output
+frontend/dist/
+
+# Scraper raw cache (large CSV files, re-downloadable)
+scraper/raw/
+
+# Data output (re-generable via scraper)
+data/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

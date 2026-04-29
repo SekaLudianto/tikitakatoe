@@ -1,0 +1,460 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import confetti from 'canvas-confetti';
+import { Trophy } from 'lucide-react';
+import gridsData from '../data/sample-grids.json';
+import './TikiTakaGame.css';
+
+function getInitials(name) {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase();
+}
+
+function proxyUrl(url) {
+  if (!url) return url;
+  // Club logos: tmssl.akamaized.net/images/wappen/head/XXX.png -> /proxy-club/XXX.png
+  if (url.includes('tmssl.akamaized.net/images/wappen/head/')) {
+    return url.replace('https://tmssl.akamaized.net/images/wappen/head/', '/proxy-club/');
+  }
+  // Player photos: img.a.transfermarkt.technology/portrait/header/XXX -> /proxy-player/XXX
+  if (url.includes('img.a.transfermarkt.technology/portrait/header/')) {
+    return url.replace('https://img.a.transfermarkt.technology/portrait/header/', '/proxy-player/');
+  }
+  // Flags: flagcdn.com/w80/xx.png -> /proxy-flag/w80/xx.png
+  if (url.includes('flagcdn.com/')) {
+    return url.replace('https://flagcdn.com/', '/proxy-flag/');
+  }
+  return url;
+}
+
+function ClubLogo({ src, name, className }) {
+  const [broken, setBroken] = useState(false);
+  const proxied = proxyUrl(src);
+  if (broken || !proxied) {
+    return (
+      <div className="club-logo-fallback" title={name}>
+        {getInitials(name)}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={proxied}
+      alt={name}
+      className={className}
+      title={name}
+      onError={() => setBroken(true)}
+    />
+  );
+}
+
+export default function TikiTakaGame() {
+  const [gridData, setGridData] = useState(null);
+  const [cells, setCells] = useState(Array(9).fill(null));
+  const [feed, setFeed] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  const [liveStatus, setLiveStatus] = useState({ connected: false, username: '' });
+  const [viewerCount, setViewerCount] = useState(0);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [countdown, setCountdown] = useState(15);
+  const [mvpStats, setMvpStats] = useState([]);
+  const [hints, setHints] = useState(Array(9).fill(0));
+  
+  const messagesEndRef = useRef(null);
+  const wsRef = useRef(null);
+  const gridRef = useRef(null);
+  const cellsRef = useRef(cells);
+
+  // Keep cellsRef in sync
+  useEffect(() => { cellsRef.current = cells; }, [cells]);
+  useEffect(() => { gridRef.current = gridData; }, [gridData]);
+
+  // Initialize a random grid
+  const startNewGame = useCallback(() => {
+    const randomGrid = gridsData[Math.floor(Math.random() * gridsData.length)];
+    setGridData(randomGrid);
+    setCells(Array(9).fill(null));
+    setHints(Array(9).fill(0));
+    setIsCompleted(false);
+    setCountdown(15);
+    setMvpStats([]);
+  }, [gridsData]);
+
+  // Automatic countdown for next game
+  useEffect(() => {
+    let timer;
+    if (isCompleted && countdown > 0) {
+      timer = setTimeout(() => setCountdown(c => c - 1), 1000);
+    } else if (isCompleted && countdown === 0) {
+      startNewGame();
+    }
+    return () => clearTimeout(timer);
+  }, [isCompleted, countdown, startNewGame]);
+
+  useEffect(() => {
+    startNewGame();
+  }, [startNewGame]);
+
+  // Connect to WebSocket backend
+  useEffect(() => {
+    let ws;
+    let reconnectTimer;
+
+    function connect() {
+      ws = new WebSocket('ws://localhost:3001');
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('🔌 Connected to backend');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+
+          if (msg.type === 'status') {
+            setLiveStatus({ connected: msg.connected, username: msg.username || '', error: msg.error });
+          }
+
+          if (msg.type === 'viewerCount') {
+            setViewerCount(msg.count);
+          }
+
+          if (msg.type === 'chat') {
+            // Process the comment as a guess, pass full user info
+            handleGuess(msg.comment, {
+              uniqueId: msg.user.uniqueId,
+              nickname: msg.user.nickname,
+              profilePictureUrl: msg.user.profilePictureUrl,
+            });
+          }
+
+          if (msg.type === 'member') {
+            addFeedMessage(msg.uniqueId, 'joined the stream', false);
+          }
+
+          if (msg.type === 'gift') {
+            addFeedMessage(msg.uniqueId, `sent ${msg.repeatCount}x ${msg.giftName} 🎁`, false);
+          }
+
+          if (msg.type === 'follow') {
+            addFeedMessage(msg.uniqueId, 'followed! ❤️', false);
+          }
+        } catch (e) {
+          // ignore
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('🔌 Disconnected from backend, reconnecting in 3s...');
+        setLiveStatus(prev => ({ ...prev, connected: false }));
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => {
+        // Will trigger onclose
+      };
+    }
+
+    connect();
+
+    return () => {
+      clearTimeout(reconnectTimer);
+      if (ws) ws.close();
+    };
+  }, []);
+
+  // Scroll feed to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [feed]);
+
+  const addFeedMessage = (username, text, isCorrect = false) => {
+    setFeed(prev => {
+      const newFeed = [...prev, { id: Date.now() + Math.random(), username, text, isCorrect }];
+      if (newFeed.length > 30) return newFeed.slice(newFeed.length - 30);
+      return newFeed;
+    });
+  };
+
+  const handleGuess = (guess, userInfo = { uniqueId: 'You', nickname: 'You', profilePictureUrl: '' }) => {
+    // Support simple string for manual input
+    if (typeof userInfo === 'string') {
+      userInfo = { uniqueId: userInfo, nickname: userInfo, profilePictureUrl: '' };
+    }
+
+    const currentGrid = gridRef.current;
+    const currentCells = cellsRef.current;
+    if (!currentGrid) return;
+    
+    // Normalize: strip accents/diacritics, lowercase, remove hyphens
+    const normalize = (str) => 
+      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-']/g, ' ').trim();
+
+    const searchName = normalize(guess);
+    if (searchName.length < 3) return;
+    let found = false;
+
+    for (let i = 0; i < currentGrid.cells.length; i++) {
+      if (currentCells[i] !== null) continue;
+
+      const cellData = currentGrid.cells[i];
+      const match = cellData.sampleAnswers.find(ans => {
+        const normalizedName = normalize(ans.name);
+        const nameParts = normalizedName.split(' ');
+        const lastName = nameParts[nameParts.length - 1];
+        
+        return (
+          normalizedName.includes(searchName) ||
+          searchName.includes(normalizedName) ||
+          lastName === searchName ||
+          (searchName.length >= 4 && nameParts.some(part => part === searchName))
+        );
+      });
+
+      if (match) {
+        const newCells = [...currentCells];
+        newCells[i] = {
+          playerName: match.name,
+          imageUrl: match.imageUrl,
+          uniqueId: userInfo.uniqueId,
+          nickname: userInfo.nickname,
+          profilePictureUrl: userInfo.profilePictureUrl,
+        };
+        setCells(newCells);
+        addFeedMessage(userInfo.uniqueId, `guessed ${match.name} correctly! ✅`, true);
+        
+        // Check if game is completed
+        const completed = newCells.every(c => c !== null);
+        if (completed) {
+          setIsCompleted(true);
+          
+          // Calculate MVP Stats
+          const stats = {};
+          newCells.forEach(c => {
+            const key = c.uniqueId;
+            if (!stats[key]) {
+              stats[key] = {
+                uniqueId: c.uniqueId,
+                nickname: c.nickname,
+                profilePictureUrl: c.profilePictureUrl,
+                score: 0
+              };
+            }
+            stats[key].score += 1;
+          });
+          
+          const sortedMvps = Object.values(stats).sort((a, b) => b.score - a.score);
+          setMvpStats(sortedMvps);
+
+          // Reduced confetti for performance
+          const duration = 2000;
+          const end = Date.now() + duration;
+
+          (function frame() {
+            confetti({
+              particleCount: 2,
+              angle: 60,
+              spread: 40,
+              origin: { x: 0 },
+              colors: ['#10b981', '#ffffff', '#fbbf24']
+            });
+            confetti({
+              particleCount: 2,
+              angle: 120,
+              spread: 40,
+              origin: { x: 1 },
+              colors: ['#10b981', '#ffffff', '#fbbf24']
+            });
+
+            if (Date.now() < end) {
+              requestAnimationFrame(frame);
+            }
+          }());
+        } else {
+          // Normal confetti (reduced)
+          confetti({
+            particleCount: 40,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ['#10b981', '#ffffff', '#fbbf24']
+          });
+        }
+        
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      addFeedMessage(userInfo.uniqueId, guess, false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!inputValue) return;
+    handleGuess(inputValue, 'You');
+    setInputValue('');
+  };
+
+  const handleCellClick = (idx) => {
+    if (cells[idx] !== null) return; // already guessed
+    setHints(prev => {
+      const next = [...prev];
+      next[idx] = (next[idx] + 1) % 3; // Cycle: 0 -> 1 -> 2 -> 0
+      return next;
+    });
+  };
+
+  const getHint = (name, level) => {
+    if (!name || level === 0) return '?';
+    const parts = name.split(' ');
+    if (level === 1) {
+      return parts.map(p => p[0].toUpperCase() + '.').join(' ');
+    }
+    if (level === 2) {
+      return parts.map((p, i) => {
+        if (i === parts.length - 1) { // last name
+          if (p.length <= 2) return p;
+          return p[0].toUpperCase() + ' ' + '_ '.repeat(p.length - 2).trim() + ' ' + p[p.length - 1].toLowerCase();
+        }
+        return p[0].toUpperCase() + '.';
+      }).join(' ');
+    }
+    return '?';
+  };
+
+  if (!gridData) return null;
+
+  return (
+    <div className="tikitaka-container">
+      <div className="bg-blob blob-1"></div>
+      <div className="bg-blob blob-2"></div>
+
+      <div className="game-content">
+        {isCompleted && (
+          <div className="completion-overlay">
+            <div className="completion-card">
+              <div className="ft-badge">FULL TIME</div>
+              <h2>MATCH COMPLETED</h2>
+              <div className="mvp-list">
+                <h3>🏆 TOP SCORERS</h3>
+                {mvpStats.map((mvp, idx) => (
+                  <div key={mvp.uniqueId} className="mvp-row">
+                    <div className="mvp-rank">#{idx + 1}</div>
+                    {mvp.profilePictureUrl ? (
+                      <img src={mvp.profilePictureUrl} alt="avatar" className="mvp-avatar" />
+                    ) : (
+                      <div className="mvp-avatar-placeholder">{mvp.nickname.charAt(0)}</div>
+                    )}
+                    <div className="mvp-name">{mvp.nickname}</div>
+                    <div className="mvp-score">{mvp.score} pt</div>
+                  </div>
+                ))}
+              </div>
+              <div className="countdown-container">
+                <svg className="countdown-svg" viewBox="0 0 100 100">
+                  <circle className="countdown-bg" cx="50" cy="50" r="45"></circle>
+                  <circle 
+                    className="countdown-progress" 
+                    cx="50" cy="50" r="45"
+                    style={{ strokeDashoffset: `${283 - (283 * countdown) / 15}` }}
+                  ></circle>
+                </svg>
+                <div className="countdown-number">{countdown}</div>
+                <div className="countdown-label">NEXT MATCH</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="game-header">
+          <h1>TIKI TAKA T<span className="ball-icon">⚽</span>E</h1>
+          <p>TikTok Live Challenge</p>
+        </div>
+
+        <div className="board-container">
+          <div className="col-headers">
+            {gridData.cols.map((col, idx) => (
+              <div key={`col-${idx}`} className="header-cell">
+                {col.type === 'position' ? (
+                  <div className="text-logo">{col.textLogo}</div>
+                ) : (
+                  <ClubLogo src={col.logoUrl} name={col.name} className="club-logo" />
+                )}
+                <span className="club-name">{col.name}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="row-headers">
+            {gridData.rows.map((row, idx) => (
+              <div key={`row-${idx}`} className="header-cell">
+                {row.type === 'position' ? (
+                  <div className="text-logo">{row.textLogo}</div>
+                ) : (
+                  <ClubLogo src={row.logoUrl} name={row.name} className="club-logo" />
+                )}
+                <span className="club-name">{row.name}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid">
+            {gridData.cells.map((cell, idx) => {
+              const filled = cells[idx];
+              return (
+                <div 
+                  key={`cell-${idx}`} 
+                  className={`grid-cell ${filled ? 'filled' : ''} ${!filled && hints[idx] > 0 ? 'hint-active' : ''}`}
+                  onClick={() => handleCellClick(idx)}
+                >
+                  <div className="cell-number">{idx + 1}</div>
+                  
+                  {filled ? (
+                    <div className="filled-content">
+                      <div className="player-image-container">
+                        <img src={proxyUrl(filled.imageUrl)} alt={filled.playerName} className="player-image" />
+                      </div>
+                      <div className="player-name-badge">{filled.playerName}</div>
+                      <div className="guesser-badge">
+                        {filled.profilePictureUrl && (
+                          <img src={filled.profilePictureUrl} alt={filled.nickname} className="guesser-avatar" />
+                        )}
+                        <span className="guesser-nick">{filled.nickname || filled.uniqueId}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="player-name" style={{ opacity: hints[idx] > 0 ? 0.8 : 0.1, color: hints[idx] > 0 ? '#fbbf24' : 'inherit' }}>
+                        {hints[idx] > 0 ? getHint(cell.sampleAnswers[0]?.name, hints[idx]) : '?'}
+                      </div>
+                      <div className="answer-count">{cell.answerCount} valid players</div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="status-bar">
+          <div className={`pulse ${liveStatus.connected ? '' : 'pulse-gray'}`}></div>
+          {liveStatus.connected 
+            ? <span>LIVE @{liveStatus.username} • 👀 {viewerCount}</span>
+            : <span>Offline {liveStatus.error ? `— ${liveStatus.error}` : ''}</span>
+          }
+        </div>
+
+        <form className="mock-input" onSubmit={handleSubmit}>
+          <input 
+            type="text" 
+            placeholder="Type player name (e.g. 'Messi')" 
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+          />
+          <button type="submit">Guess</button>
+        </form>
+      </div>
+    </div>
+  );
+}
