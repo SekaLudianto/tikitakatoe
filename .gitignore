@@ -9,8 +9,8 @@ frontend/dist/
 # Scraper raw cache (large CSV files, re-downloadable)
 scraper/raw/
 
-# Data output (re-generable via scraper)
-data/
+# Data output at root (re-generable via scraper)
+/data/
 
 # Environment variables
 .env

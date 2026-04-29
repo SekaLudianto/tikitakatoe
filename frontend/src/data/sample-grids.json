@@ -1,0 +1,1145 @@
+[
+  {
+    "rows": [
+      {
+        "type": "club",
+        "id": 1049,
+        "name": "Valencia",
+        "logoUrl": "/logos/1049.png"
+      },
+      {
+        "type": "club",
+        "id": 383,
+        "name": "PSV Eindhoven",
+        "logoUrl": "/logos/383.png"
+      },
+      {
+        "type": "club",
+        "id": 631,
+        "name": "Chelsea",
+        "logoUrl": "/logos/631.png"
+      }
+    ],
+    "cols": [
+      {
+        "type": "position",
+        "id": "Attack",
+        "name": "Attack",
+        "textLogo": "ATT"
+      },
+      {
+        "type": "country",
+        "id": "England",
+        "name": "England",
+        "logoUrl": "/flags/gb-eng.png"
+      },
+      {
+        "type": "club",
+        "id": 430,
+        "name": "Fiorentina",
+        "logoUrl": "/logos/430.png"
+      }
+    ],
+    "cells": [
+      {
+        "row": "Valencia",
+        "col": "Attack",
+        "answerCount": 35,
+        "sampleAnswers": [
+          {
+            "name": "Hélder Postiga",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/s_5169_142_2012_10_24_1.jpg?lm=1"
+          },
+          {
+            "name": "Álvaro Negredo",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/18644-1663139293.jpg?lm=1"
+          },
+          {
+            "name": "Kévin Gameiro",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/27389-1676905538.jpg?lm=1"
+          },
+          {
+            "name": "Nani",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/33706-1618737188.jpg?lm=1"
+          },
+          {
+            "name": "Roberto Soldado",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/34870-1583308636.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Valencia",
+        "col": "England",
+        "answerCount": 1,
+        "sampleAnswers": [
+          {
+            "name": "Max Aarons",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/471690-1736520346.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Valencia",
+        "col": "Fiorentina",
+        "answerCount": 6,
+        "sampleAnswers": [
+          {
+            "name": "Mario Suárez",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/37337-1448527270.jpg?lm=1"
+          },
+          {
+            "name": "Facundo Roncaglia",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/61546-1583311017.jpg?lm=1"
+          },
+          {
+            "name": "Tino Costa",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/77003-1448531413.jpg?lm=1"
+          },
+          {
+            "name": "Neto",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/111819-1725051877.jpg?lm=1"
+          },
+          {
+            "name": "Patrick Cutrone",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/265078-1714818222.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "PSV Eindhoven",
+        "col": "Attack",
+        "answerCount": 23,
+        "sampleAnswers": [
+          {
+            "name": "Konstantinos Mitroglou",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/34944-1554904582.jpg?lm=1"
+          },
+          {
+            "name": "Jeremain Lens",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/38497-1669399774.jpg?lm=1"
+          },
+          {
+            "name": "Ivan Perišić",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/42460-1667991317.jpg?lm=1"
+          },
+          {
+            "name": "Dries Mertens",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/56416-1671109411.png?lm=1"
+          },
+          {
+            "name": "Luuk de Jong",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/72522-1682332002.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "PSV Eindhoven",
+        "col": "England",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Noni Madueke",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/503987-1683102348.jpg?lm=1"
+          },
+          {
+            "name": "Jarrad Branthwaite",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/661053-1687975679.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "PSV Eindhoven",
+        "col": "Fiorentina",
+        "answerCount": 1,
+        "sampleAnswers": [
+          {
+            "name": "Albert Gudmundsson",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/305947-1705389252.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Chelsea",
+        "col": "Attack",
+        "answerCount": 45,
+        "sampleAnswers": [
+          {
+            "name": "Didier Drogba",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3924-1683633427.jpg?lm=1"
+          },
+          {
+            "name": "Samuel Eto'o",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/4257-1683640611.jpg?lm=1"
+          },
+          {
+            "name": "Fernando Torres",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/7767-1683642827.jpg?lm=1"
+          },
+          {
+            "name": "Yossi Benayoun",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/s_7858_631_2013_04_25_1.jpg?lm=1"
+          },
+          {
+            "name": "Alexandre Pato",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/37579-1647201883.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Chelsea",
+        "col": "England",
+        "answerCount": 26,
+        "sampleAnswers": [
+          {
+            "name": "Frank Lampard",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3163-1674475335.jpg?lm=1"
+          },
+          {
+            "name": "Ashley Cole",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3182-1683297696.jpg?lm=1"
+          },
+          {
+            "name": "Ryan Bertrand",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/40611-1518794490.jpg?lm=1"
+          },
+          {
+            "name": "Daniel Sturridge",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/47082-1538297993.jpg?lm=1"
+          },
+          {
+            "name": "Danny Drinkwater",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/73491-1632290404.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Chelsea",
+        "col": "Fiorentina",
+        "answerCount": 5,
+        "sampleAnswers": [
+          {
+            "name": "Marko Marin",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/35251-1549025382.jpg?lm=1"
+          },
+          {
+            "name": "Juan Cuadrado",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/91970-1663576912.jpg?lm=1"
+          },
+          {
+            "name": "Marcos Alonso",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/112515-1694505734.jpg?lm=1"
+          },
+          {
+            "name": "Mohamed Salah",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/148455-1727337594.jpg?lm=1"
+          },
+          {
+            "name": "Tariq Lamptey",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/504148-1692364960.jpg?lm=1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "type": "club",
+        "id": 379,
+        "name": "West Ham United",
+        "logoUrl": "/logos/379.png"
+      },
+      {
+        "type": "club",
+        "id": 31,
+        "name": "Liverpool",
+        "logoUrl": "/logos/31.png"
+      },
+      {
+        "type": "club",
+        "id": 610,
+        "name": "Ajax",
+        "logoUrl": "/logos/610.png"
+      }
+    ],
+    "cols": [
+      {
+        "type": "position",
+        "id": "Midfield",
+        "name": "Midfield",
+        "textLogo": "MID"
+      },
+      {
+        "type": "country",
+        "id": "Colombia",
+        "name": "Colombia",
+        "logoUrl": "/flags/co.png"
+      },
+      {
+        "type": "club",
+        "id": 46,
+        "name": "Inter Milan",
+        "logoUrl": "/logos/46.png"
+      }
+    ],
+    "cells": [
+      {
+        "row": "West Ham United",
+        "col": "Midfield",
+        "answerCount": 26,
+        "sampleAnswers": [
+          {
+            "name": "Joe Cole",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3876-1524234241.jpg?lm=1"
+          },
+          {
+            "name": "Samir Nasri",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/18935-1566312906.jpg?lm=1"
+          },
+          {
+            "name": "Antonio Nocerino",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/22203-1489605377.jpg?lm=1"
+          },
+          {
+            "name": "Alex Song",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/s_27394_131_2013_08_05_1.jpg?lm=1"
+          },
+          {
+            "name": "Nenê",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/29091-1724955986.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "West Ham United",
+        "col": "Colombia",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Carlos Sánchez",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/51226-1491464026.jpg?lm=1"
+          },
+          {
+            "name": "Pablo Armero",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/73786-1455534368.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "West Ham United",
+        "col": "Inter Milan",
+        "answerCount": 3,
+        "sampleAnswers": [
+          {
+            "name": "Marko Arnautovic",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/41384-1716316175.jpg?lm=1"
+          },
+          {
+            "name": "Victor Moses",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/59866-1632577912.png?lm=1"
+          },
+          {
+            "name": "João Mário",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/149729-1757717410.png?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Liverpool",
+        "col": "Midfield",
+        "answerCount": 27,
+        "sampleAnswers": [
+          {
+            "name": "James Milner",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3333-1662621121.jpg?lm=1"
+          },
+          {
+            "name": "Joe Cole",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3876-1524234241.jpg?lm=1"
+          },
+          {
+            "name": "Nuri Sahin",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/31095-1502448530.jpg?lm=1"
+          },
+          {
+            "name": "Lucas Leiva",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/41414-1620821429.jpg?lm=1"
+          },
+          {
+            "name": "Georginio Wijnaldum",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/49499-1686738263.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Liverpool",
+        "col": "Colombia",
+        "answerCount": 1,
+        "sampleAnswers": [
+          {
+            "name": "Luis Díaz",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/480692-1757938077.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Liverpool",
+        "col": "Inter Milan",
+        "answerCount": 3,
+        "sampleAnswers": [
+          {
+            "name": "Victor Moses",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/59866-1632577912.png?lm=1"
+          },
+          {
+            "name": "Philippe Coutinho",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/80444-1746211175.jpg?lm=1"
+          },
+          {
+            "name": "Xherdan Shaqiri",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/86792-1723811199.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Ajax",
+        "col": "Midfield",
+        "answerCount": 18,
+        "sampleAnswers": [
+          {
+            "name": "Vurnon Anita",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/30670-1582820795.jpg?lm=1"
+          },
+          {
+            "name": "Miralem Sulejmani",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/36080-1533136216.jpg?lm=1"
+          },
+          {
+            "name": "Siem de Jong",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/45509-1629186499.jpg?lm=1"
+          },
+          {
+            "name": "Jordan Henderson",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/61651-1662621084.jpg?lm=1"
+          },
+          {
+            "name": "Christian Eriksen",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/69633-1718628122.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Ajax",
+        "col": "Colombia",
+        "answerCount": 1,
+        "sampleAnswers": [
+          {
+            "name": "Davinson Sánchez",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/341429-1728904655.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Ajax",
+        "col": "Inter Milan",
+        "answerCount": 3,
+        "sampleAnswers": [
+          {
+            "name": "Christian Eriksen",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/69633-1718628122.jpg?lm=1"
+          },
+          {
+            "name": "Davy Klaassen",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/182932-1726562366.jpg?lm=1"
+          },
+          {
+            "name": "André Onana",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/234509-1769612568.jpg?lm=1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "type": "club",
+        "id": 610,
+        "name": "Ajax",
+        "logoUrl": "/logos/610.png"
+      },
+      {
+        "type": "club",
+        "id": 398,
+        "name": "Lazio",
+        "logoUrl": "/logos/398.png"
+      },
+      {
+        "type": "club",
+        "id": 124,
+        "name": "Rangers",
+        "logoUrl": "/logos/124.png"
+      }
+    ],
+    "cols": [
+      {
+        "type": "position",
+        "id": "Defender",
+        "name": "Defender",
+        "textLogo": "DEF"
+      },
+      {
+        "type": "country",
+        "id": "Netherlands",
+        "name": "Netherlands",
+        "logoUrl": "/flags/nl.png"
+      },
+      {
+        "type": "club",
+        "id": 985,
+        "name": "Manchester United",
+        "logoUrl": "/logos/985.png"
+      }
+    ],
+    "cells": [
+      {
+        "row": "Ajax",
+        "col": "Defender",
+        "answerCount": 26,
+        "sampleAnswers": [
+          {
+            "name": "Heiko Westermann",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/1726-1447257388.jpg?lm=1"
+          },
+          {
+            "name": "Johnny Heitinga",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/4315-1406751625.jpg?lm=1"
+          },
+          {
+            "name": "Daley Blind",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/12282-1718096647.jpg?lm=1"
+          },
+          {
+            "name": "Toby Alderweireld",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/42710-1664349412.jpg?lm=1"
+          },
+          {
+            "name": "Gregory van der Wiel",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/45548-1520787963.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Ajax",
+        "col": "Netherlands",
+        "answerCount": 32,
+        "sampleAnswers": [
+          {
+            "name": "Johnny Heitinga",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/4315-1406751625.jpg?lm=1"
+          },
+          {
+            "name": "Daley Blind",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/12282-1718096647.jpg?lm=1"
+          },
+          {
+            "name": "Ryan Babel",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/16135-1663352942.png?lm=1"
+          },
+          {
+            "name": "Remko Pasveer",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/25520-1666951851.jpg?lm=1"
+          },
+          {
+            "name": "Kenneth Vermeer",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/30290-1724750901.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Ajax",
+        "col": "Manchester United",
+        "answerCount": 9,
+        "sampleAnswers": [
+          {
+            "name": "Daley Blind",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/12282-1718096647.jpg?lm=1"
+          },
+          {
+            "name": "Christian Eriksen",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/69633-1718628122.jpg?lm=1"
+          },
+          {
+            "name": "Wout Weghorst",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/228645-1727259675.jpg?lm=1"
+          },
+          {
+            "name": "André Onana",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/234509-1769612568.jpg?lm=1"
+          },
+          {
+            "name": "Donny van de Beek",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/288255-1642174403.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Lazio",
+        "col": "Defender",
+        "answerCount": 16,
+        "sampleAnswers": [
+          {
+            "name": "Milan Bisevac",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/24661-1448018509.jpg?lm=1"
+          },
+          {
+            "name": "Modibo Diakité",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/41749-1449138062.jpg?lm=1"
+          },
+          {
+            "name": "Mateo Musacchio",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/45653-1595858653.jpg?lm=1"
+          },
+          {
+            "name": "Martín Cáceres",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/54935-1678022357.jpg?lm=1"
+          },
+          {
+            "name": "Maurício",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/67864-1413969525.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Lazio",
+        "col": "Netherlands",
+        "answerCount": 3,
+        "sampleAnswers": [
+          {
+            "name": "Stefan de Vrij",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/111196-1663572651.jpg?lm=1"
+          },
+          {
+            "name": "Ricardo Kishna",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/159026-1448468222.jpg?lm=1"
+          },
+          {
+            "name": "Kenneth Taylor",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/470394-1745076706.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Lazio",
+        "col": "Manchester United",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Nani",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/33706-1618737188.jpg?lm=1"
+          },
+          {
+            "name": "Andreas Pereira",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/203394-1659355525.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Rangers",
+        "col": "Defender",
+        "answerCount": 14,
+        "sampleAnswers": [
+          {
+            "name": "Philippe Senderos",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/4277-1521307855.JPG?lm=1"
+          },
+          {
+            "name": "Bruno Alves",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/13121-1595920356.jpg?lm=1"
+          },
+          {
+            "name": "James Tavernier",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/62094-1663162918.jpg?lm=1"
+          },
+          {
+            "name": "Jon Flanagan",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/145922-1596699225.jpg?lm=1"
+          },
+          {
+            "name": "Fábio Cardoso",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/155025-1736318779.JPG?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Rangers",
+        "col": "Netherlands",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Sam Lammers",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/386914-1764688999.png?lm=1"
+          },
+          {
+            "name": "Neraysho Kasanwirjo",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/503640-1745076272.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Rangers",
+        "col": "Manchester United",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Tom Lawrence",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/229970-1727380895.jpg?lm=1"
+          },
+          {
+            "name": "Amad Diallo",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/536835-1747857754.jpg?lm=1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "type": "club",
+        "id": 368,
+        "name": "Sevilla",
+        "logoUrl": "/logos/368.png"
+      },
+      {
+        "type": "club",
+        "id": 610,
+        "name": "Ajax",
+        "logoUrl": "/logos/610.png"
+      },
+      {
+        "type": "club",
+        "id": 405,
+        "name": "Aston Villa",
+        "logoUrl": "/logos/405.png"
+      }
+    ],
+    "cols": [
+      {
+        "type": "country",
+        "id": "Morocco",
+        "name": "Morocco",
+        "logoUrl": "/flags/ma.png"
+      },
+      {
+        "type": "club",
+        "id": 762,
+        "name": "Newcastle United",
+        "logoUrl": "/logos/762.png"
+      },
+      {
+        "type": "position",
+        "id": "Attack",
+        "name": "Attack",
+        "textLogo": "ATT"
+      }
+    ],
+    "cells": [
+      {
+        "row": "Sevilla",
+        "col": "Morocco",
+        "answerCount": 3,
+        "sampleAnswers": [
+          {
+            "name": "Munir El Haddadi",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/223725-1687272900.jpg?lm=1"
+          },
+          {
+            "name": "Oussama Idrissi",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/241391-1685101552.jpg?lm=1"
+          },
+          {
+            "name": "Youssef En-Nesyri",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/433049-1765459421.png?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Sevilla",
+        "col": "Newcastle United",
+        "answerCount": 1,
+        "sampleAnswers": [
+          {
+            "name": "Luuk de Jong",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/72522-1682332002.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Sevilla",
+        "col": "Attack",
+        "answerCount": 40,
+        "sampleAnswers": [
+          {
+            "name": "Álvaro Negredo",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/18644-1663139293.jpg?lm=1"
+          },
+          {
+            "name": "Kévin Gameiro",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/27389-1676905538.jpg?lm=1"
+          },
+          {
+            "name": "Fernando Llorente",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/35564-1447240179.jpg?lm=1"
+          },
+          {
+            "name": "Alexis Sánchez",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/40433-1759840737.jpg?lm=1"
+          },
+          {
+            "name": "Stevan Jovetić",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/46104-1762903681.png?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Ajax",
+        "col": "Morocco",
+        "answerCount": 6,
+        "sampleAnswers": [
+          {
+            "name": "Zakaria Labyad",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/123349-1618845587.jpg?lm=1"
+          },
+          {
+            "name": "Hakim Ziyech",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/217111-1668081193.jpg?lm=1"
+          },
+          {
+            "name": "Oussama Idrissi",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/241391-1685101552.jpg?lm=1"
+          },
+          {
+            "name": "Noussair Mazraoui",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/340456-1700207898.jpg?lm=1"
+          },
+          {
+            "name": "Anass Salah-Eddine",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/485584-1766406432.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Ajax",
+        "col": "Newcastle United",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Vurnon Anita",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/30670-1582820795.jpg?lm=1"
+          },
+          {
+            "name": "Siem de Jong",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/45509-1629186499.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Ajax",
+        "col": "Attack",
+        "answerCount": 32,
+        "sampleAnswers": [
+          {
+            "name": "Ryan Babel",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/16135-1663352942.png?lm=1"
+          },
+          {
+            "name": "Derk Boerrigter",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/s_30668_610_2012_2.jpg?lm=1"
+          },
+          {
+            "name": "Dušan Tadić",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/36139-1728391824.JPG?lm=1"
+          },
+          {
+            "name": "Bojan Krkic",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/44675-1583613429.jpg?lm=1"
+          },
+          {
+            "name": "Amin Younes",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/96167-1517913715.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Aston Villa",
+        "col": "Morocco",
+        "answerCount": 1,
+        "sampleAnswers": [
+          {
+            "name": "Karim El Ahmadi",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/25523-1523371802.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Aston Villa",
+        "col": "Newcastle United",
+        "answerCount": 3,
+        "sampleAnswers": [
+          {
+            "name": "Ciaran Clark",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/98240-1659355441.jpg?lm=1"
+          },
+          {
+            "name": "Matt Targett",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/250478-1772541862.jpg?lm=1"
+          },
+          {
+            "name": "Jacob Ramsey",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/503749-1687975464.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Aston Villa",
+        "col": "Attack",
+        "answerCount": 19,
+        "sampleAnswers": [
+          {
+            "name": "Scott Sinclair",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/s_31552_281_2012_1.jpg?lm=1"
+          },
+          {
+            "name": "Christian Benteke",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/50201-1740673905.jpg?lm=1"
+          },
+          {
+            "name": "Libor Kozak",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/63824-1538488890.jpg?lm=1"
+          },
+          {
+            "name": "Aleksandar Tonev",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/87282-1649487018.png?lm=1"
+          },
+          {
+            "name": "Jordan Ayew",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/108354-1668429913.jpg?lm=1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "rows": [
+      {
+        "type": "club",
+        "id": 31,
+        "name": "Liverpool",
+        "logoUrl": "/logos/31.png"
+      },
+      {
+        "type": "club",
+        "id": 398,
+        "name": "Lazio",
+        "logoUrl": "/logos/398.png"
+      },
+      {
+        "type": "club",
+        "id": 281,
+        "name": "Manchester City",
+        "logoUrl": "/logos/281.png"
+      }
+    ],
+    "cols": [
+      {
+        "type": "club",
+        "id": 1050,
+        "name": "Villarreal",
+        "logoUrl": "/logos/1050.png"
+      },
+      {
+        "type": "country",
+        "id": "Belgium",
+        "name": "Belgium",
+        "logoUrl": "/flags/be.png"
+      },
+      {
+        "type": "position",
+        "id": "Midfield",
+        "name": "Midfield",
+        "textLogo": "MID"
+      }
+    ],
+    "cells": [
+      {
+        "row": "Liverpool",
+        "col": "Villarreal",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Pepe Reina",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/7825-1724826388.jpg?lm=1"
+          },
+          {
+            "name": "Alberto Moreno",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/207917-1687268193.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Liverpool",
+        "col": "Belgium",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Christian Benteke",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/50201-1740673905.jpg?lm=1"
+          },
+          {
+            "name": "Divock Origi",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/148368-1709306595.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Liverpool",
+        "col": "Midfield",
+        "answerCount": 27,
+        "sampleAnswers": [
+          {
+            "name": "James Milner",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3333-1662621121.jpg?lm=1"
+          },
+          {
+            "name": "Joe Cole",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3876-1524234241.jpg?lm=1"
+          },
+          {
+            "name": "Nuri Sahin",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/31095-1502448530.jpg?lm=1"
+          },
+          {
+            "name": "Lucas Leiva",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/41414-1620821429.jpg?lm=1"
+          },
+          {
+            "name": "Georginio Wijnaldum",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/49499-1686738263.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Lazio",
+        "col": "Villarreal",
+        "answerCount": 3,
+        "sampleAnswers": [
+          {
+            "name": "Pepe Reina",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/7825-1724826388.jpg?lm=1"
+          },
+          {
+            "name": "Mateo Musacchio",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/45653-1595858653.jpg?lm=1"
+          },
+          {
+            "name": "Boulaye Dia",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/626913-1730127040.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Lazio",
+        "col": "Belgium",
+        "answerCount": 1,
+        "sampleAnswers": [
+          {
+            "name": "Luis Pedro Cavanda",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/102192-1473587119.jpeg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Lazio",
+        "col": "Midfield",
+        "answerCount": 19,
+        "sampleAnswers": [
+          {
+            "name": "Antonio Candreva",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/25488-1630591271.jpg?lm=1"
+          },
+          {
+            "name": "Lucas Biglia",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/26721-1669376509.jpg?lm=1"
+          },
+          {
+            "name": "Milan Badelj",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/40633-1692277462.jpg?lm=1"
+          },
+          {
+            "name": "Lucas Leiva",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/41414-1620821429.jpg?lm=1"
+          },
+          {
+            "name": "Hernanes",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/52897-1410955079.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Manchester City",
+        "col": "Villarreal",
+        "answerCount": 1,
+        "sampleAnswers": [
+          {
+            "name": "Rodri",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/357565-1682587890.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Manchester City",
+        "col": "Belgium",
+        "answerCount": 2,
+        "sampleAnswers": [
+          {
+            "name": "Dedryck Boyata",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/88262-1707939940.jpg?lm=1"
+          },
+          {
+            "name": "Kevin De Bruyne",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/88755-1713391485.jpg?lm=1"
+          }
+        ]
+      },
+      {
+        "row": "Manchester City",
+        "col": "Midfield",
+        "answerCount": 25,
+        "sampleAnswers": [
+          {
+            "name": "Frank Lampard",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3163-1674475335.jpg?lm=1"
+          },
+          {
+            "name": "Gareth Barry",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3291-1481886107.jpg?lm=1"
+          },
+          {
+            "name": "James Milner",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/3333-1662621121.jpg?lm=1"
+          },
+          {
+            "name": "Nigel de Jong",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/4672-1448982742.jpg?lm=1"
+          },
+          {
+            "name": "Jesús Navas",
+            "imageUrl": "https://img.a.transfermarkt.technology/portrait/header/15956-1694503739.jpg?lm=1"
+          }
+        ]
+      }
+    ]
+  }
+]
