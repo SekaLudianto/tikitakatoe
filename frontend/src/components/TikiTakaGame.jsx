@@ -57,6 +57,7 @@ export default function TikiTakaGame() {
   const [countdown, setCountdown] = useState(15);
   const [mvpStats, setMvpStats] = useState([]);
   const [hints, setHints] = useState(Array(9).fill(0));
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
@@ -92,6 +93,21 @@ export default function TikiTakaGame() {
   useEffect(() => {
     startNewGame();
   }, [startNewGame]);
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   // Connect to WebSocket backend
   useEffect(() => {
@@ -438,11 +454,16 @@ export default function TikiTakaGame() {
         </div>
 
         <div className="status-bar">
-          <div className={`pulse ${liveStatus.connected ? '' : 'pulse-gray'}`}></div>
-          {liveStatus.connected 
-            ? <span>LIVE @{liveStatus.username} • 👀 {viewerCount}</span>
-            : <span>Offline {liveStatus.error ? `— ${liveStatus.error}` : ''}</span>
-          }
+          <div className="status-left">
+            <div className={`pulse ${liveStatus.connected ? '' : 'pulse-gray'}`}></div>
+            {liveStatus.connected 
+              ? <span>LIVE @{liveStatus.username} • 👀 {viewerCount}</span>
+              : <span>Offline {liveStatus.error ? `— ${liveStatus.error}` : ''}</span>
+            }
+          </div>
+          <button className="fullscreen-btn" onClick={toggleFullscreen} title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}>
+            {isFullscreen ? '⛶' : '⛶'}
+          </button>
         </div>
 
         <form className="mock-input" onSubmit={handleSubmit}>

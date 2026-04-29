@@ -351,7 +351,7 @@
 .status-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
   padding: 0.5rem 0.75rem;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -361,6 +361,32 @@
   font-weight: 700;
   color: var(--text-muted);
   flex-shrink: 0;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fullscreen-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.fullscreen-btn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .pulse {
