@@ -7,8 +7,11 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 WHITE='\033[1;37m'
 DIM='\033[2m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 BOLD='\033[1m'
+
+# Save project root directory
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 clear_screen() {
     clear
@@ -71,15 +74,19 @@ install_deps() {
     echo -e "  ${WHITE}${BOLD} Installing Dependencies...${NC}"
     echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
     echo ""
+    cd "$PROJECT_DIR"
     echo -e "  ${CYAN}[1/3]${NC} Installing root dependencies..."
     npm install
     echo ""
     echo -e "  ${CYAN}[2/3]${NC} Installing frontend dependencies..."
-    cd frontend && npm install && cd ..
+    cd "$PROJECT_DIR/frontend"
+    npm install
     echo ""
     echo -e "  ${CYAN}[3/3]${NC} Installing scraper dependencies..."
-    cd scraper && npm install && cd ..
+    cd "$PROJECT_DIR/scraper"
+    npm install
     echo ""
+    cd "$PROJECT_DIR"
     echo -e "  ${GREEN}══════════════════════════════════════${NC}"
     echo -e "  ${GREEN}${BOLD} All dependencies installed!${NC}"
     echo -e "  ${GREEN}══════════════════════════════════════${NC}"
@@ -96,7 +103,9 @@ run_scraper() {
     echo -e "  ${DIM}Downloading player data & generating"
     echo -e "  puzzle grids. May take 1-3 minutes...${NC}"
     echo ""
-    cd scraper && node index.js && cd ..
+    cd "$PROJECT_DIR/scraper"
+    node index.js
+    cd "$PROJECT_DIR"
     echo ""
     echo -e "  ${GREEN}══════════════════════════════════════${NC}"
     echo -e "  ${GREEN}${BOLD} Game data generated successfully!${NC}"
@@ -127,6 +136,7 @@ start_game() {
     echo -e "  ${DIM}Press Ctrl+C to stop the game.${NC}"
     echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
     echo ""
+    cd "$PROJECT_DIR"
     node start.js "$username"
     press_continue
 }
@@ -139,18 +149,21 @@ full_setup() {
     echo -e "  ${GREEN}╚══════════════════════════════════════════════╝${NC}"
     echo ""
     
+    cd "$PROJECT_DIR"
     echo -e "  ${CYAN}[Step 1/3]${NC} Installing dependencies..."
     echo -e "  ${DIM}────────────────────────────────────${NC}"
     npm install
-    cd frontend && npm install && cd ..
-    cd scraper && npm install && cd ..
+    cd "$PROJECT_DIR/frontend" && npm install
+    cd "$PROJECT_DIR/scraper" && npm install
     echo ""
     
     echo -e "  ${CYAN}[Step 2/3]${NC} Generating game data..."
     echo -e "  ${DIM}────────────────────────────────────${NC}"
-    cd scraper && node index.js && cd ..
+    cd "$PROJECT_DIR/scraper"
+    node index.js
     echo ""
     
+    cd "$PROJECT_DIR"
     echo -e "  ${CYAN}[Step 3/3]${NC} Ready to launch!"
     echo -e "  ${DIM}────────────────────────────────────${NC}"
     echo ""
