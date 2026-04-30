@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import TikiTakaGame from './components/TikiTakaGame';
 import MainMenu from './components/MainMenu';
+import { Home } from 'lucide-react';
 
 function App() {
   const [currentMode, setCurrentMode] = useState('menu');
@@ -12,9 +13,10 @@ function App() {
   if (currentMode === 'grid') {
     return (
       <div style={{ position: 'relative', width: '100vw', height: '100vh' }}>
-        {/* Added a back button to return to the menu */}
+        {/* Compact Back Button */}
         <button 
           onClick={() => setCurrentMode('menu')}
+          title="Back to Menu"
           style={{
             position: 'absolute',
             top: '20px',
@@ -23,14 +25,19 @@ function App() {
             background: 'rgba(30, 41, 59, 0.8)',
             color: 'white',
             border: '1px solid rgba(255,255,255,0.2)',
-            padding: '8px 16px',
-            borderRadius: '8px',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
             cursor: 'pointer',
             backdropFilter: 'blur(4px)',
-            fontWeight: 'bold'
+            transition: 'all 0.2s ease',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
           }}
         >
-          ← Back to Menu
+          <Home size={20} />
         </button>
         <TikiTakaGame />
       </div>

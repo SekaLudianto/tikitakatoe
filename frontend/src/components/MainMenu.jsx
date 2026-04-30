@@ -10,7 +10,7 @@ export default function MainMenu({ onSelectMode }) {
       <div className="menu-blob menu-blob-3"></div>
 
       <div className="menu-content">
-        <h1 className="menu-title">TIKI TAKA T⚽E</h1>
+        <h1 className="menu-title" style={{ fontSize: '3.5rem' }}>FOOTBALL TRIVIA</h1>
         <p className="menu-subtitle">Select a Game Mode to start playing on your TikTok Live!</p>
 
         <div className="modes-grid">
@@ -20,7 +20,7 @@ export default function MainMenu({ onSelectMode }) {
             onClick={() => onSelectMode('grid')}
           >
             <div className="mode-icon">🧠</div>
-            <h2 className="mode-title">Classic Grid</h2>
+            <h2 className="mode-title">BOX2BOX</h2>
             <p className="mode-desc">
               The ultimate 3x3 football matrix. Viewers guess players who played for both clubs or fit the criteria.
             </p>

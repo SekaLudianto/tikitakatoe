@@ -1,5 +1,5 @@
 /**
- * Tiki Taka Toe - Backend Server
+ * BOX2BOX - Backend Server
  * 
  * Connects to a TikTok LIVE stream via tiktok-live-connector,
  * reads chat comments, and broadcasts them to the frontend
@@ -28,7 +28,7 @@ const WS_PORT = 3001;
 
 if (!TIKTOK_USERNAME) {
   console.log('');
-  console.log('⚽ Tiki Taka Toe - TikTok Live Server');
+  console.log('⚽ BOX2BOX - TikTok Live Server');
   console.log('─'.repeat(40));
   console.log('');
   console.log('Usage:');
@@ -290,163 +290,201 @@ function broadcast(data) {
 // ==================== TIKTOK LIVE CONNECTOR ====================
 let tiktokConnected = false;
 let lastViewerCount = 0;
+let tiktokLive = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_DELAY = 60000; // Max 60 seconds between retries
+const BASE_RECONNECT_DELAY = 5000; // Start at 5 seconds
 
 console.log('');
-console.log('⚽ Tiki Taka Toe - TikTok Live Server');
+console.log('⚽ BOX2BOX - TikTok Live Server');
 console.log('─'.repeat(40));
 console.log(`📺 Target: @${username}`);
 console.log(`🔗 WebSocket: ws://localhost:${WS_PORT}`);
 console.log(`🌐 API: http://localhost:${WS_PORT}/api`);
 console.log('');
 
-const tiktokLive = new WebcastPushConnection(username, {
-  processInitialData: true,
-  enableExtendedGiftInfo: false,
-  enableWebsocketUpgrade: true,
-  requestPollingIntervalMs: 2000,
-  sessionId: undefined,
-  clientParams: {
-    app_language: 'en-US',
-    device_platform: 'web',
-  },
-  requestHeaders: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  },
-});
+function getReconnectDelay() {
+  // Exponential backoff: 5s, 10s, 20s, 40s, 60s (max)
+  const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY);
+  return delay;
+}
 
-// Connect to the TikTok LIVE stream
-tiktokLive.connect()
-  .then((state) => {
-    tiktokConnected = true;
-    console.log(`✅ Connected to @${username}'s LIVE!`);
-    console.log(`   Room ID: ${state.roomId}`);
-    console.log(`   Viewers: ${state.roomInfo?.stats?.total_user || 'N/A'}`);
-    console.log('');
-    console.log('💬 Listening for comments...');
-    console.log('');
+function connectToTikTok() {
+  // Clean up previous connection if any
+  if (tiktokLive) {
+    try { tiktokLive.disconnect(); } catch (e) {}
+  }
+
+  tiktokLive = new WebcastPushConnection(username, {
+    processInitialData: true,
+    enableExtendedGiftInfo: false,
+    enableWebsocketUpgrade: true,
+    requestPollingIntervalMs: 2000,
+    sessionId: undefined,
+    clientParams: {
+      app_language: 'en-US',
+      device_platform: 'web',
+    },
+    requestHeaders: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    },
+  });
+
+  // ==================== EVENT HANDLERS ====================
+
+  // 💬 Chat comments - THE MAIN EVENT for our game
+  tiktokLive.on('chat', (data) => {
+    const comment = data.comment;
+    const user = {
+      uniqueId: data.uniqueId,
+      nickname: data.nickname,
+      profilePictureUrl: data.profilePictureUrl,
+      followRole: data.followRole,
+      isModerator: data.isModerator,
+      isSubscriber: data.isSubscriber,
+    };
+
+    console.log(`💬 @${user.uniqueId}: ${comment}`);
 
     broadcast({
-      type: 'status',
-      connected: true,
-      username: username,
-      roomId: state.roomId,
+      type: 'chat',
+      comment: comment,
+      user: user,
+      timestamp: Date.now(),
     });
-  })
-  .catch((err) => {
-    console.error(`❌ Failed to connect: ${err.message}`);
-    console.log('');
-    console.log('Common reasons:');
-    console.log('  - User is not currently LIVE');
-    console.log('  - Username is incorrect');
-    console.log('  - TikTok is blocking the connection');
-    console.log('');
-    
+  });
+
+  // 👋 Member join
+  tiktokLive.on('member', (data) => {
     broadcast({
-      type: 'status',
-      connected: false,
-      error: err.message,
+      type: 'member',
+      uniqueId: data.uniqueId,
+      nickname: data.nickname,
+      timestamp: Date.now(),
     });
   });
 
-// ==================== EVENT HANDLERS ====================
-
-// 💬 Chat comments - THE MAIN EVENT for our game
-tiktokLive.on('chat', (data) => {
-  const comment = data.comment;
-  const user = {
-    uniqueId: data.uniqueId,
-    nickname: data.nickname,
-    profilePictureUrl: data.profilePictureUrl,
-    followRole: data.followRole,
-    isModerator: data.isModerator,
-    isSubscriber: data.isSubscriber,
-  };
-
-  console.log(`💬 @${user.uniqueId}: ${comment}`);
-
-  broadcast({
-    type: 'chat',
-    comment: comment,
-    user: user,
-    timestamp: Date.now(),
+  // 👀 Viewer count update
+  tiktokLive.on('roomUser', (data) => {
+    lastViewerCount = data.viewerCount;
+    broadcast({
+      type: 'viewerCount',
+      count: data.viewerCount,
+    });
   });
-});
 
-// 👋 Member join
-tiktokLive.on('member', (data) => {
-  broadcast({
-    type: 'member',
-    uniqueId: data.uniqueId,
-    nickname: data.nickname,
-    timestamp: Date.now(),
+  // ❤️ Like
+  tiktokLive.on('like', (data) => {
+    broadcast({
+      type: 'like',
+      uniqueId: data.uniqueId,
+      nickname: data.nickname,
+      likeCount: data.likeCount,
+      totalLikeCount: data.totalLikeCount,
+    });
   });
-});
 
-// 👀 Viewer count update
-tiktokLive.on('roomUser', (data) => {
-  lastViewerCount = data.viewerCount;
-  broadcast({
-    type: 'viewerCount',
-    count: data.viewerCount,
+  // 🎁 Gift
+  tiktokLive.on('gift', (data) => {
+    // Only process when the gift sequence ends (repeatEnd = true)
+    if (data.giftType === 1 && !data.repeatEnd) return;
+
+    console.log(`🎁 @${data.uniqueId} sent ${data.repeatCount}x ${data.giftName}`);
+
+    broadcast({
+      type: 'gift',
+      uniqueId: data.uniqueId,
+      nickname: data.nickname,
+      giftName: data.giftName,
+      giftId: data.giftId,
+      repeatCount: data.repeatCount,
+      diamondCount: data.diamondCount,
+      timestamp: Date.now(),
+    });
   });
-});
 
-// ❤️ Like
-tiktokLive.on('like', (data) => {
-  broadcast({
-    type: 'like',
-    uniqueId: data.uniqueId,
-    nickname: data.nickname,
-    likeCount: data.likeCount,
-    totalLikeCount: data.totalLikeCount,
+  // 👤 Follow
+  tiktokLive.on('follow', (data) => {
+    console.log(`👤 @${data.uniqueId} followed!`);
+    broadcast({
+      type: 'follow',
+      uniqueId: data.uniqueId,
+      nickname: data.nickname,
+    });
   });
-});
 
-// 🎁 Gift
-tiktokLive.on('gift', (data) => {
-  // Only process when the gift sequence ends (repeatEnd = true)
-  if (data.giftType === 1 && !data.repeatEnd) return;
-
-  console.log(`🎁 @${data.uniqueId} sent ${data.repeatCount}x ${data.giftName}`);
-
-  broadcast({
-    type: 'gift',
-    uniqueId: data.uniqueId,
-    nickname: data.nickname,
-    giftName: data.giftName,
-    giftId: data.giftId,
-    repeatCount: data.repeatCount,
-    diamondCount: data.diamondCount,
-    timestamp: Date.now(),
+  // 📡 Connection events — AUTO-RECONNECT
+  tiktokLive.on('streamEnd', () => {
+    console.log('📡 Stream ended');
+    tiktokConnected = false;
+    broadcast({ type: 'status', connected: false, reason: 'Stream ended' });
+    scheduleReconnect();
   });
-});
 
-// 👤 Follow
-tiktokLive.on('follow', (data) => {
-  console.log(`👤 @${data.uniqueId} followed!`);
-  broadcast({
-    type: 'follow',
-    uniqueId: data.uniqueId,
-    nickname: data.nickname,
+  tiktokLive.on('error', (err) => {
+    console.error('⚠️ TikTok error:', err.message);
   });
-});
 
-// 📡 Connection events
-tiktokLive.on('streamEnd', () => {
-  console.log('📡 Stream ended');
-  tiktokConnected = false;
-  broadcast({ type: 'status', connected: false, reason: 'Stream ended' });
-});
+  tiktokLive.on('disconnected', () => {
+    console.log('📡 Disconnected from TikTok');
+    tiktokConnected = false;
+    broadcast({ type: 'status', connected: false, reason: 'Disconnected' });
+    scheduleReconnect();
+  });
 
-tiktokLive.on('error', (err) => {
-  console.error('⚠️ Error:', err.message);
-});
+  // Attempt connection
+  console.log(`🔄 Connecting to @${username}'s LIVE...`);
+  
+  tiktokLive.connect()
+    .then((state) => {
+      tiktokConnected = true;
+      reconnectAttempts = 0; // Reset on success
+      console.log(`✅ Connected to @${username}'s LIVE!`);
+      console.log(`   Room ID: ${state.roomId}`);
+      console.log(`   Viewers: ${state.roomInfo?.stats?.total_user || 'N/A'}`);
+      console.log('');
+      console.log('💬 Listening for comments...');
+      console.log('');
 
-tiktokLive.on('disconnected', () => {
-  console.log('📡 Disconnected from TikTok');
-  tiktokConnected = false;
-  broadcast({ type: 'status', connected: false, reason: 'Disconnected' });
-});
+      broadcast({
+        type: 'status',
+        connected: true,
+        username: username,
+        roomId: state.roomId,
+      });
+    })
+    .catch((err) => {
+      console.error(`❌ Failed to connect: ${err.message}`);
+      tiktokConnected = false;
+      
+      broadcast({
+        type: 'status',
+        connected: false,
+        error: err.message,
+      });
+
+      scheduleReconnect();
+    });
+}
+
+function scheduleReconnect() {
+  const delay = getReconnectDelay();
+  reconnectAttempts++;
+  console.log(`🔄 Auto-reconnecting in ${delay / 1000}s... (attempt #${reconnectAttempts})`);
+  
+  broadcast({
+    type: 'reconnecting',
+    delay: delay,
+    attempt: reconnectAttempts,
+  });
+
+  setTimeout(() => {
+    connectToTikTok();
+  }, delay);
+}
+
+// Initial connection
+connectToTikTok();
 
 // ==================== START SERVER ====================
 server.listen(WS_PORT, () => {
@@ -456,11 +494,23 @@ server.listen(WS_PORT, () => {
   console.log('');
 });
 
+// ==================== CRASH PROTECTION ====================
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception (server stays alive):', err.message);
+  // Don't exit — keep the HTTP/WS server running
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('💥 Unhandled Rejection (server stays alive):', reason);
+  // Don't exit — keep the HTTP/WS server running
+});
+
 // Graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n👋 Shutting down...');
-  tiktokLive.disconnect();
+  if (tiktokLive) tiktokLive.disconnect();
   wss.close();
   server.close();
   process.exit(0);
 });
+

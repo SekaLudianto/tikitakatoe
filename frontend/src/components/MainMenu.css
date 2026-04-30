@@ -9,7 +9,8 @@
   color: #f8fafc;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Background animated blobs */
@@ -61,7 +62,8 @@
   align-items: center;
   width: 100%;
   max-width: 1000px;
-  padding: 2rem;
+  padding: 3rem 1.5rem;
+  margin: auto;
 }
 
 .menu-title {
@@ -83,6 +85,7 @@
   margin-bottom: 4rem;
   text-align: center;
   font-weight: 500;
+  max-width: 600px;
 }
 
 .modes-grid {
@@ -211,11 +214,45 @@
 }
 
 @media (max-width: 768px) {
-  .menu-title {
-    font-size: 3rem;
+  .menu-content {
+    padding: 2rem 1.5rem;
   }
+  
+  .menu-title {
+    font-size: 2.5rem;
+  }
+  
+  .menu-subtitle {
+    font-size: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  
   .modes-grid {
     flex-direction: column;
     align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .mode-card {
+    padding: 2rem 1.5rem;
+    max-width: 100%;
+  }
+
+  .mode-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .mode-title {
+    font-size: 1.5rem;
+  }
+
+  .mode-desc {
+    font-size: 0.95rem;
+  }
+
+  .play-btn {
+    margin-top: 1.5rem;
+    padding: 0.8rem 2rem;
   }
 }

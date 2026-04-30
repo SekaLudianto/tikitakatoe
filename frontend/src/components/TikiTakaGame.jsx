@@ -507,7 +507,7 @@ export default function TikiTakaGame() {
 
 
         <div className="game-header">
-          <h1>TIKI TAKA T<span className="ball-icon">⚽</span>E</h1>
+          <h1>B<span className="ball-icon">⚽</span>X 2 B<span className="ball-icon">⚽</span>X</h1>
           
           <div className="difficulty-selector">
             <button 
