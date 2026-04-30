@@ -270,7 +270,7 @@ export default function TikiTakaGame() {
     });
   };
 
-  const handleGuess = (guess, userInfo = { uniqueId: 'You', nickname: 'You', profilePictureUrl: '' }) => {
+  const handleGuess = async (guess, userInfo = { uniqueId: 'You', nickname: 'You', profilePictureUrl: '' }) => {
     // Support simple string for manual input
     if (typeof userInfo === 'string') {
       userInfo = { uniqueId: userInfo, nickname: userInfo, profilePictureUrl: '' };
@@ -288,25 +288,62 @@ export default function TikiTakaGame() {
     if (searchName.length < 3) return;
     let found = false;
 
+    // Try each unfilled cell
     for (let i = 0; i < currentGrid.cells.length; i++) {
       if (currentCells[i] !== null) continue;
 
       const cellData = currentGrid.cells[i];
-      const match = cellData.sampleAnswers.find(ans => {
-        const normalizedName = normalize(ans.name);
-        const nameParts = normalizedName.split(' ');
-        const lastName = nameParts[nameParts.length - 1];
-        
-        return (
-          normalizedName.includes(searchName) ||
-          searchName.includes(normalizedName) ||
-          lastName === searchName ||
-          (searchName.length >= 4 && nameParts.some(part => part === searchName))
-        );
-      });
+      const rowIdx = Math.floor(i / 3);
+      const colIdx = i % 3;
+      const header1 = currentGrid.rows[rowIdx]; // { type, id, name }
+      const header2 = currentGrid.cols[colIdx]; // { type, id, name }
+
+      // 1) Try backend API validation (full database: 16,258 players)
+      let apiMatch = null;
+      try {
+        const res = await fetch('/api/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guess, header1, header2 }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.match && data.player) {
+            apiMatch = data.player;
+          }
+        }
+      } catch (err) {
+        // API not available, will fall back to sampleAnswers
+      }
+
+      // 2) Fallback: check sampleAnswers (offline/backup)
+      let match = null;
+      if (apiMatch) {
+        match = apiMatch;
+      } else {
+        const localMatch = cellData.sampleAnswers.find(ans => {
+          const normalizedName = normalize(ans.name);
+          const nameParts = normalizedName.split(' ');
+          const lastName = nameParts[nameParts.length - 1];
+          
+          return (
+            normalizedName.includes(searchName) ||
+            searchName.includes(normalizedName) ||
+            lastName === searchName ||
+            (searchName.length >= 4 && nameParts.some(part => part === searchName))
+          );
+        });
+        if (localMatch) {
+          match = { name: localMatch.name, imageUrl: localMatch.imageUrl };
+        }
+      }
 
       if (match) {
-        const newCells = [...currentCells];
+        // Re-check cells haven't changed during await
+        const latestCells = cellsRef.current;
+        if (latestCells[i] !== null) continue;
+
+        const newCells = [...latestCells];
         newCells[i] = {
           playerName: match.name,
           imageUrl: match.imageUrl,

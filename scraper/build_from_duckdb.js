@@ -249,8 +249,89 @@ async function main() {
   
   const topClubIdsList = Object.keys(TOP_CLUB_IDS).map(id => `'${id}'`).join(',');
   
-  console.log('⏳ Mengambil data pemain dari DuckDB (SQL Query)...');
-  
+  // ==================== STEP 1: Build club name mapping ====================
+  // player_valuations stores club names (not reliable IDs), so we need name→ID mapping
+  console.log('⏳ Building club name mapping...');
+  const clubNameRows = await runQuery(conn, `SELECT club_id, name FROM clubs WHERE club_id IN (${topClubIdsList})`);
+  const clubNameToId = {};
+  for (const row of clubNameRows) {
+    const id = parseInt(row.club_id);
+    clubNameToId[row.name.toLowerCase().trim()] = id;
+    // Also add the short alias
+    if (TOP_CLUB_IDS[id]) clubNameToId[TOP_CLUB_IDS[id].toLowerCase().trim()] = id;
+  }
+  // Common name variations found in player_valuations
+  const NAME_VARIATIONS = {
+    'fc internazionale': 46, 'inter': 46, 'inter mailand': 46, 'internazionale': 46,
+    'ajax amsterdam': 610, 'ajax': 610,
+    'ogc nice': 417, 'nice': 417,
+    'fc barcelona': 131, 'barcelona': 131, 'barça': 131,
+    'real madrid cf': 418, 'real madrid': 418,
+    'atletico madrid': 13, 'atlético de madrid': 13, 'atletico de madrid': 13,
+    'manchester united': 985, 'man united': 985, 'man utd': 985,
+    'manchester city': 281, 'man city': 281,
+    'tottenham hotspur': 148, 'tottenham': 148, 'spurs': 148,
+    'paris saint-germain': 583, 'paris sg': 583, 'psg': 583,
+    'bayern munich': 27, 'fc bayern münchen': 27, 'bayern münchen': 27, 'bayern': 27,
+    'borussia dortmund': 16, 'bvb': 16, 'dortmund': 16,
+    'bayer leverkusen': 15, 'bayer 04 leverkusen': 15, 'leverkusen': 15,
+    'rb leipzig': 23826, 'rasenballsport leipzig': 23826,
+    'ac milan': 5, 'milan': 5, 'ac mailand': 5,
+    'as roma': 12, 'roma': 12, 'as rom': 12,
+    'juventus': 506, 'juventus fc': 506, 'juventus turin': 506,
+    'napoli': 6195, 'ssc napoli': 6195, 'ssc neapel': 6195,
+    'lazio': 398, 'ss lazio': 398, 'lazio rom': 398,
+    'fiorentina': 430, 'ac fiorentina': 430, 'acf fiorentina': 430,
+    'atalanta': 800, 'atalanta bergamo': 800, 'atalanta bc': 800,
+    'liverpool': 31, 'liverpool fc': 31,
+    'arsenal': 11, 'arsenal fc': 11,
+    'chelsea': 631, 'chelsea fc': 631,
+    'everton': 29, 'everton fc': 29,
+    'newcastle united': 762, 'newcastle': 762,
+    'west ham united': 379, 'west ham': 379,
+    'aston villa': 405,
+    'galatasaray': 141, 'galatasaray sk': 141, 'galatasaray istanbul': 141,
+    'fenerbahce': 36, 'fenerbahçe': 36, 'fenerbahçe sk': 36, 'fenerbahce sk': 36,
+    'besiktas': 114, 'beşiktaş': 114, 'besiktas jk': 114, 'beşiktaş jk': 114,
+    'benfica': 294, 'sl benfica': 294, 'benfica lissabon': 294,
+    'fc porto': 720, 'porto': 720,
+    'sporting cp': 336, 'sporting lissabon': 336, 'sporting clube de portugal': 336, 'sporting lisbon': 336,
+    'ajax amsterdam': 610, 'afc ajax': 610,
+    'psv eindhoven': 383, 'psv': 383,
+    'feyenoord': 234, 'feyenoord rotterdam': 234,
+    'celtic': 371, 'celtic fc': 371, 'celtic glasgow': 371,
+    'rangers': 124, 'rangers fc': 124, 'glasgow rangers': 124,
+    'sevilla': 368, 'sevilla fc': 368, 'fc sevilla': 368,
+    'villarreal': 1050, 'villarreal cf': 1050,
+    'real betis': 150, 'real betis balompié': 150, 'betis sevilla': 150,
+    'valencia': 1049, 'valencia cf': 1049,
+    'real sociedad': 681, 'real sociedad san sebastián': 681,
+    'athletic bilbao': 621, 'athletic club': 621,
+    'marseille': 244, 'olympique marseille': 244, 'olympique de marseille': 244, 'om': 244,
+    'olympique lyon': 1041, 'olympique lyonnais': 1041, 'lyon': 1041,
+    'as monaco': 162, 'monaco': 162,
+    'torino': 416, 'torino fc': 416,
+    'udinese': 410, 'udinese calcio': 410,
+    'bologna': 1025, 'bologna fc': 1025,
+    'sassuolo': 6574, 'us sassuolo': 6574,
+  };
+  Object.assign(clubNameToId, NAME_VARIATIONS);
+
+  function matchClubName(name) {
+    if (!name) return null;
+    const lower = name.toLowerCase().trim();
+    if (clubNameToId[lower]) return clubNameToId[lower];
+    // Partial match: check if known name is contained
+    for (const [knownName, id] of Object.entries(clubNameToId)) {
+      if (knownName.length >= 4 && (lower.includes(knownName) || knownName.includes(lower))) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  // ==================== STEP 2: Query appearances (primary) ====================
+  console.log('⏳ Mengambil data pemain dari appearances...');
   const query = `
     SELECT 
       p.player_id, 
@@ -264,25 +345,96 @@ async function main() {
     WHERE a.player_club_id IN (${topClubIdsList})
     GROUP BY p.player_id, p.name, p.country_of_citizenship, p.position, p.image_url
   `;
-  
   const rawPlayers = await runQuery(conn, query);
+  console.log(`   ✅ ${rawPlayers.length} pemain dari appearances`);
+
+  // ==================== STEP 3: Query player_valuations (fills pre-2012 gaps) ====================
+  console.log('⏳ Mengambil riwayat klub dari player_valuations (data dari 2004+)...');
+  const pvQuery = `
+    SELECT DISTINCT player_id, current_club_name 
+    FROM player_valuations 
+    WHERE current_club_name IS NOT NULL
+  `;
+  const pvRows = await runQuery(conn, pvQuery);
+  const pvPlayerClubs = {}; // player_id -> Set<club_id>
+  let pvMatched = 0;
+  for (const row of pvRows) {
+    const clubId = matchClubName(row.current_club_name);
+    if (clubId && TOP_CLUB_IDS[clubId]) {
+      if (!pvPlayerClubs[row.player_id]) pvPlayerClubs[row.player_id] = new Set();
+      pvPlayerClubs[row.player_id].add(clubId);
+      pvMatched++;
+    }
+  }
+  console.log(`   ✅ ${pvMatched} klub-pemain pairs dari valuations (${Object.keys(pvPlayerClubs).length} pemain)`);
+
+  // ==================== STEP 4: Query transfers ====================
+  console.log('⏳ Mengambil data transfer...');
+  const trQuery = `
+    SELECT player_id, from_club_id, to_club_id 
+    FROM transfers 
+    WHERE from_club_id IN (${topClubIdsList}) OR to_club_id IN (${topClubIdsList})
+  `;
+  const trRows = await runQuery(conn, trQuery);
+  const trPlayerClubs = {}; // player_id -> Set<club_id>
+  for (const row of trRows) {
+    if (!trPlayerClubs[row.player_id]) trPlayerClubs[row.player_id] = new Set();
+    const fromId = parseInt(row.from_club_id);
+    const toId = parseInt(row.to_club_id);
+    if (TOP_CLUB_IDS[fromId]) trPlayerClubs[row.player_id].add(fromId);
+    if (TOP_CLUB_IDS[toId]) trPlayerClubs[row.player_id].add(toId);
+  }
+  console.log(`   ✅ ${trRows.length} transfer records (${Object.keys(trPlayerClubs).length} pemain)`);
+
+  // ==================== STEP 5: Fetch additional players not in appearances ====================
+  const existingIds = new Set(rawPlayers.map(r => r.player_id));
+  const extraIds = new Set();
+  for (const pid of Object.keys(pvPlayerClubs)) { if (!existingIds.has(parseInt(pid))) extraIds.add(parseInt(pid)); }
+  for (const pid of Object.keys(trPlayerClubs)) { if (!existingIds.has(parseInt(pid))) extraIds.add(parseInt(pid)); }
   
-  console.log(`✅ Berhasil mengambil ${rawPlayers.length} pemain top!`);
-  console.log('\n⚙️ Membangun database game...');
+  if (extraIds.size > 0) {
+    console.log(`⏳ Mengambil ${extraIds.size} pemain tambahan dari valuations/transfers...`);
+    // Query in batches to avoid too-long SQL
+    const extraIdArr = [...extraIds];
+    for (let i = 0; i < extraIdArr.length; i += 500) {
+      const batch = extraIdArr.slice(i, i + 500);
+      const extraQuery = `
+        SELECT player_id, name, country_of_citizenship as country, position, image_url as imageUrl
+        FROM players WHERE player_id IN (${batch.join(',')})
+      `;
+      const extraPlayers = await runQuery(conn, extraQuery);
+      for (const ep of extraPlayers) {
+        rawPlayers.push({ ...ep, club_ids: [] });
+      }
+    }
+    console.log(`   ✅ Total pemain sekarang: ${rawPlayers.length}`);
+  }
+
+  // ==================== STEP 6: Merge all sources & build gamePlayers ====================
+  console.log('\n⚙️ Membangun database game (merged from 3 sources)...');
 
   const gamePlayers = [];
   for (const row of rawPlayers) {
-    const clubsArr = Array.isArray(row.club_ids) ? row.club_ids : row.club_ids.split(',');
-    
-    // Kita filter lagi karena DuckDB mungkin mereturn semua club_ids, kita cuma butuh yg top
-    const validClubs = clubsArr
-      .map(Number)
-      .filter(id => TOP_CLUB_IDS[id])
-      .map(id => ({
-        id,
-        name: TOP_CLUB_IDS[id]
-      }));
+    const allClubIds = new Set();
 
+    // From appearances
+    const clubsArr = Array.isArray(row.club_ids) ? row.club_ids : 
+      (typeof row.club_ids === 'string' && row.club_ids ? row.club_ids.split(',') : []);
+    for (const id of clubsArr.map(Number)) {
+      if (TOP_CLUB_IDS[id]) allClubIds.add(id);
+    }
+
+    // From player_valuations
+    if (pvPlayerClubs[row.player_id]) {
+      for (const id of pvPlayerClubs[row.player_id]) allClubIds.add(id);
+    }
+
+    // From transfers
+    if (trPlayerClubs[row.player_id]) {
+      for (const id of trPlayerClubs[row.player_id]) allClubIds.add(id);
+    }
+
+    const validClubs = [...allClubIds].map(id => ({ id, name: TOP_CLUB_IDS[id] }));
     if (validClubs.length < 1) continue;
 
     gamePlayers.push({

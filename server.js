@@ -5,6 +5,9 @@
  * reads chat comments, and broadcasts them to the frontend
  * via WebSocket so the game can process guesses in real-time.
  * 
+ * Also provides an HTTP API for player validation against
+ * the full tiki-taka-toe-db.json database.
+ * 
  * Usage:
  *   node server.js <tiktok_username>
  * 
@@ -14,7 +17,10 @@
 
 const { WebcastPushConnection } = require('tiktok-live-connector');
 const { WebSocketServer } = require('ws');
+const express = require('express');
 const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
 // ==================== CONFIG ====================
 const TIKTOK_USERNAME = process.argv[2] || '';
@@ -38,8 +44,204 @@ if (!TIKTOK_USERNAME) {
 // Clean username (remove @ if present)
 const username = TIKTOK_USERNAME.replace('@', '');
 
-// ==================== WEBSOCKET SERVER ====================
-const server = http.createServer();
+// ==================== LOAD DATABASE ====================
+console.log('📦 Loading player database...');
+const dbPath = path.join(__dirname, 'data', 'tiki-taka-toe-db.json');
+let db = null;
+let playerIndex = {}; // normalized name -> player data array
+
+function normalize(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-']/g, ' ').trim();
+}
+
+try {
+  const raw = fs.readFileSync(dbPath, 'utf-8');
+  db = JSON.parse(raw);
+  
+  // Build a search index: normalized name parts -> player objects
+  // This allows fast lookup by last name, full name, partial match
+  for (const player of db.players) {
+    const normalizedName = normalize(player.name);
+    if (!playerIndex[normalizedName]) {
+      playerIndex[normalizedName] = [];
+    }
+    playerIndex[normalizedName].push(player);
+    
+    // Also index by last name for quick lookup
+    const parts = normalizedName.split(' ');
+    if (parts.length > 1) {
+      const lastName = parts[parts.length - 1];
+      if (!playerIndex[lastName]) {
+        playerIndex[lastName] = [];
+      }
+      playerIndex[lastName].push(player);
+    }
+  }
+  
+  console.log(`✅ Database loaded: ${db.players.length} players, ${Object.keys(db.intersections).length} club intersections`);
+} catch (err) {
+  console.error('❌ Failed to load database:', err.message);
+  process.exit(1);
+}
+
+/**
+ * Validate a player guess against the full database.
+ * 
+ * @param {string} guess - The player name guessed
+ * @param {object} header1 - First header { type: 'club'|'country'|'position', id: number|string, name: string }
+ * @param {object} header2 - Second header { type: 'club'|'country'|'position', id: number|string, name: string }
+ * @returns {object|null} - Matched player { id, name, imageUrl } or null
+ */
+function validateGuess(guess, header1, header2) {
+  const searchName = normalize(guess);
+  if (searchName.length < 3) return null;
+
+  // Determine the intersection key and which lookup table to use
+  let intersectionKey = null;
+  let lookupTable = null;
+
+  if (header1.type === 'club' && header2.type === 'club') {
+    // Club x Club intersection
+    const id1 = Number(header1.id);
+    const id2 = Number(header2.id);
+    // Try both orderings since keys might be in either order
+    intersectionKey = `${Math.min(id1, id2)}-${Math.max(id1, id2)}`;
+    lookupTable = db.intersections;
+    // Also try the original ordering
+    if (!lookupTable[intersectionKey]) {
+      intersectionKey = `${id1}-${id2}`;
+    }
+    if (!lookupTable[intersectionKey]) {
+      intersectionKey = `${id2}-${id1}`;
+    }
+  } else if (header1.type === 'club' && header2.type === 'country') {
+    intersectionKey = `${header1.id}-country:${header2.name}`;
+    lookupTable = db.countryIntersections;
+  } else if (header1.type === 'country' && header2.type === 'club') {
+    intersectionKey = `${header2.id}-country:${header1.name}`;
+    lookupTable = db.countryIntersections;
+  } else if (header1.type === 'club' && header2.type === 'position') {
+    intersectionKey = `${header1.id}-position:${header2.name}`;
+    lookupTable = db.positionIntersections;
+  } else if (header1.type === 'position' && header2.type === 'club') {
+    intersectionKey = `${header2.id}-position:${header1.name}`;
+    lookupTable = db.positionIntersections;
+  } else if (header1.type === 'country' && header2.type === 'country') {
+    // Country x Country - search all players matching both countries
+    // This is rare but handle it
+    return searchPlayersDirectly(searchName, header1, header2);
+  } else if (header1.type === 'position' && header2.type === 'position') {
+    return searchPlayersDirectly(searchName, header1, header2);
+  } else if (header1.type === 'country' && header2.type === 'position') {
+    return searchPlayersDirectly(searchName, header1, header2);
+  } else if (header1.type === 'position' && header2.type === 'country') {
+    return searchPlayersDirectly(searchName, header1, header2);
+  }
+
+  if (!lookupTable || !intersectionKey) return null;
+
+  const candidates = lookupTable[intersectionKey];
+  if (!candidates || candidates.length === 0) return null;
+
+  // Search through candidates
+  for (const candidate of candidates) {
+    const normalizedName = normalize(candidate.name);
+    const nameParts = normalizedName.split(' ');
+    const lastName = nameParts[nameParts.length - 1];
+
+    if (
+      normalizedName.includes(searchName) ||
+      searchName.includes(normalizedName) ||
+      lastName === searchName ||
+      (searchName.length >= 4 && nameParts.some(part => part === searchName))
+    ) {
+      return {
+        id: candidate.id,
+        name: candidate.name,
+        imageUrl: candidate.imageUrl || null,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Fallback: search all players directly for unusual header combinations.
+ */
+function searchPlayersDirectly(searchName, header1, header2) {
+  for (const player of db.players) {
+    const normalizedName = normalize(player.name);
+    const nameParts = normalizedName.split(' ');
+    const lastName = nameParts[nameParts.length - 1];
+
+    const nameMatch = (
+      normalizedName.includes(searchName) ||
+      searchName.includes(normalizedName) ||
+      lastName === searchName ||
+      (searchName.length >= 4 && nameParts.some(part => part === searchName))
+    );
+
+    if (!nameMatch) continue;
+
+    // Check if player matches both headers
+    const matchesH1 = matchesHeader(player, header1);
+    const matchesH2 = matchesHeader(player, header2);
+
+    if (matchesH1 && matchesH2) {
+      return {
+        id: player.id,
+        name: player.name,
+        imageUrl: player.imageUrl || null,
+      };
+    }
+  }
+  return null;
+}
+
+function matchesHeader(player, header) {
+  if (header.type === 'club') {
+    return player.clubs && player.clubs.some(c => String(c.id) === String(header.id));
+  } else if (header.type === 'country') {
+    return player.country === header.name;
+  } else if (header.type === 'position') {
+    return player.position === header.name;
+  }
+  return false;
+}
+
+// ==================== EXPRESS + WEBSOCKET SERVER ====================
+const app = express();
+app.use(express.json());
+
+// API: Validate a player guess
+app.post('/api/validate', (req, res) => {
+  const { guess, header1, header2 } = req.body;
+
+  if (!guess || !header1 || !header2) {
+    return res.status(400).json({ error: 'Missing required fields: guess, header1, header2' });
+  }
+
+  const result = validateGuess(guess, header1, header2);
+
+  if (result) {
+    res.json({ match: true, player: result });
+  } else {
+    res.json({ match: false, player: null });
+  }
+});
+
+// API: Health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    players: db.players.length,
+    intersections: Object.keys(db.intersections).length,
+    tiktokConnected,
+  });
+});
+
+const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const clients = new Set();
@@ -94,6 +296,7 @@ console.log('⚽ Tiki Taka Toe - TikTok Live Server');
 console.log('─'.repeat(40));
 console.log(`📺 Target: @${username}`);
 console.log(`🔗 WebSocket: ws://localhost:${WS_PORT}`);
+console.log(`🌐 API: http://localhost:${WS_PORT}/api`);
 console.log('');
 
 const tiktokLive = new WebcastPushConnection(username, {
@@ -247,7 +450,9 @@ tiktokLive.on('disconnected', () => {
 
 // ==================== START SERVER ====================
 server.listen(WS_PORT, () => {
-  console.log(`🚀 WebSocket server running on ws://localhost:${WS_PORT}`);
+  console.log(`🚀 Server running on http://localhost:${WS_PORT}`);
+  console.log(`   WebSocket: ws://localhost:${WS_PORT}`);
+  console.log(`   API:       http://localhost:${WS_PORT}/api/validate`);
   console.log('');
 });
 
