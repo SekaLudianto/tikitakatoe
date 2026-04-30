@@ -217,7 +217,7 @@ function buildGameDatabase(players, playerClubMap, clubsData) {
     const playerId = player.player_id;
     const clubs = playerClubMap[playerId];
     
-    if (!clubs || clubs.size < 2) continue;
+    if (!clubs || clubs.size < 1) continue;
     
     const clubList = Array.from(clubs);
     
@@ -413,7 +413,7 @@ function generateSampleGrids(db, count = 5) {
             row: row.name,
             col: col.name,
             answerCount: answers.length,
-            sampleAnswers: answers.slice(0, 5).map(a => ({
+            sampleAnswers: answers.map(a => ({
               name: a.name,
               imageUrl: a.imageUrl
             })),
@@ -552,8 +552,8 @@ async function main() {
   console.log(`  ✅ Flags: ${flagOk} downloaded, ${flagSkip} cached`);
 
   // Generate sample grids
-  console.log('\n🧪 Step 5: Generating sample puzzle grids...\n');
-  const sampleGrids = generateSampleGrids(gameDb, 5);
+  console.log('\n🧪 Step 5: Generating puzzle grids...\n');
+  const sampleGrids = generateSampleGrids(gameDb, 50);
   
   for (let i = 0; i < sampleGrids.length; i++) {
     const grid = sampleGrids[i];

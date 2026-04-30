@@ -9,8 +9,9 @@ frontend/dist/
 # Scraper raw cache (large CSV files, re-downloadable)
 scraper/raw/
 
-# Data output at root (re-generable via scraper)
-/data/
+# Database
+*.duckdb
+
 
 # Environment variables
 .env

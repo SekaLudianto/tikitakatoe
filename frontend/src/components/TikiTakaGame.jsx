@@ -4,6 +4,21 @@ import { Trophy } from 'lucide-react';
 import gridsData from '../data/sample-grids.json';
 import './TikiTakaGame.css';
 
+const loadGlobalLeaderboard = () => {
+  try {
+    const data = localStorage.getItem('tikitaka_global_leaderboard');
+    return data ? JSON.parse(data) : {};
+  } catch (e) {
+    return {};
+  }
+};
+
+const saveGlobalLeaderboard = (data) => {
+  try {
+    localStorage.setItem('tikitaka_global_leaderboard', JSON.stringify(data));
+  } catch (e) {}
+};
+
 function getInitials(name) {
   return name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase();
 }
@@ -56,8 +71,11 @@ export default function TikiTakaGame() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [countdown, setCountdown] = useState(15);
   const [mvpStats, setMvpStats] = useState([]);
+  const [globalStats, setGlobalStats] = useState([]);
   const [hints, setHints] = useState(Array(9).fill(0));
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [difficulty, setDifficulty] = useState('medium');
+  const [roundLikes, setRoundLikes] = useState(0);
   
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
@@ -68,16 +86,45 @@ export default function TikiTakaGame() {
   useEffect(() => { cellsRef.current = cells; }, [cells]);
   useEffect(() => { gridRef.current = gridData; }, [gridData]);
 
-  // Initialize a random grid
+  // Initialize a random grid without repeating until all are played
   const startNewGame = useCallback(() => {
-    const randomGrid = gridsData[Math.floor(Math.random() * gridsData.length)];
-    setGridData(randomGrid);
+    let playedHistory = [];
+    try {
+      const historyStr = localStorage.getItem(`tikitaka_played_grids_${difficulty}`);
+      if (historyStr) playedHistory = JSON.parse(historyStr);
+    } catch (e) {}
+
+    const availableGrids = gridsData[difficulty] || gridsData.medium;
+
+    let availableIndices = [];
+    for (let i = 0; i < availableGrids.length; i++) {
+      if (!playedHistory.includes(i)) {
+        availableIndices.push(i);
+      }
+    }
+
+    // Reset jika semua soal sudah pernah keluar
+    if (availableIndices.length === 0) {
+      availableIndices = Array.from({ length: availableGrids.length }, (_, i) => i);
+      playedHistory = [];
+    }
+
+    const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    const chosenGrid = availableGrids[randomIndex];
+
+    playedHistory.push(randomIndex);
+    try {
+      localStorage.setItem(`tikitaka_played_grids_${difficulty}`, JSON.stringify(playedHistory));
+    } catch (e) {}
+
+    setGridData(chosenGrid);
     setCells(Array(9).fill(null));
     setHints(Array(9).fill(0));
     setIsCompleted(false);
     setCountdown(15);
     setMvpStats([]);
-  }, [gridsData]);
+    setRoundLikes(0);
+  }, [difficulty]);
 
   // Automatic countdown for next game
   useEffect(() => {
@@ -91,6 +138,9 @@ export default function TikiTakaGame() {
   }, [isCompleted, countdown, startNewGame]);
 
   useEffect(() => {
+    const globalData = loadGlobalLeaderboard();
+    const sortedGlobal = Object.values(globalData).sort((a, b) => b.score - a.score).slice(0, 5); // Limit global to top 5
+    setGlobalStats(sortedGlobal);
     startNewGame();
   }, [startNewGame]);
 
@@ -154,6 +204,10 @@ export default function TikiTakaGame() {
           if (msg.type === 'follow') {
             addFeedMessage(msg.uniqueId, 'followed! ❤️', false);
           }
+          
+          if (msg.type === 'like') {
+            setRoundLikes(prev => prev + msg.likeCount);
+          }
         } catch (e) {
           // ignore
         }
@@ -177,6 +231,31 @@ export default function TikiTakaGame() {
       if (ws) ws.close();
     };
   }, []);
+
+  // Handle auto-hint on 1000 likes
+  useEffect(() => {
+    if (roundLikes >= 1000 && !isCompleted) {
+      setRoundLikes(prev => prev - 1000); // Reset tapi biarkan lebihannya
+      
+      setHints(prev => {
+        const newHints = [...prev];
+        const currentCells = cellsRef.current;
+        const emptyIndices = [];
+        
+        for (let i = 0; i < 9; i++) {
+          if (!currentCells[i] && newHints[i] < 2) {
+            emptyIndices.push(i);
+          }
+        }
+        
+        if (emptyIndices.length > 0) {
+          const randomIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+          newHints[randomIdx] += 1;
+        }
+        return newHints;
+      });
+    }
+  }, [roundLikes, isCompleted]);
 
   // Scroll feed to bottom
   useEffect(() => {
@@ -260,6 +339,28 @@ export default function TikiTakaGame() {
           
           const sortedMvps = Object.values(stats).sort((a, b) => b.score - a.score);
           setMvpStats(sortedMvps);
+
+          // Update Global Leaderboard
+          const globalData = loadGlobalLeaderboard();
+          newCells.forEach(c => {
+            const key = c.uniqueId;
+            if (!globalData[key]) {
+              globalData[key] = {
+                uniqueId: c.uniqueId,
+                nickname: c.nickname,
+                profilePictureUrl: c.profilePictureUrl,
+                score: 0
+              };
+            }
+            // Update profile picture and nickname if changed
+            globalData[key].nickname = c.nickname;
+            if (c.profilePictureUrl) globalData[key].profilePictureUrl = c.profilePictureUrl;
+            
+            globalData[key].score += 1;
+          });
+          saveGlobalLeaderboard(globalData);
+          const sortedGlobal = Object.values(globalData).sort((a, b) => b.score - a.score).slice(0, 5);
+          setGlobalStats(sortedGlobal);
 
           // Reduced confetti for performance
           const duration = 2000;
@@ -347,48 +448,87 @@ export default function TikiTakaGame() {
       <div className="bg-blob blob-2"></div>
 
       <div className="game-content">
-        {isCompleted && (
-          <div className="completion-overlay">
-            <div className="completion-card">
-              <div className="ft-badge">FULL TIME</div>
-              <h2>MATCH COMPLETED</h2>
-              <div className="mvp-list">
-                <h3>🏆 TOP SCORERS</h3>
-                {mvpStats.map((mvp, idx) => (
-                  <div key={mvp.uniqueId} className="mvp-row">
-                    <div className="mvp-rank">#{idx + 1}</div>
-                    {mvp.profilePictureUrl ? (
-                      <img src={mvp.profilePictureUrl} alt="avatar" className="mvp-avatar" />
-                    ) : (
-                      <div className="mvp-avatar-placeholder">{mvp.nickname.charAt(0)}</div>
-                    )}
-                    <div className="mvp-name">{mvp.nickname}</div>
-                    <div className="mvp-score">{mvp.score} pt</div>
-                  </div>
-                ))}
-              </div>
-              <div className="countdown-container">
-                <svg className="countdown-svg" viewBox="0 0 100 100">
-                  <circle className="countdown-bg" cx="50" cy="50" r="45"></circle>
-                  <circle 
-                    className="countdown-progress" 
-                    cx="50" cy="50" r="45"
-                    style={{ strokeDashoffset: `${283 - (283 * countdown) / 15}` }}
-                  ></circle>
-                </svg>
-                <div className="countdown-number">{countdown}</div>
-                <div className="countdown-label">NEXT MATCH</div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         <div className="game-header">
           <h1>TIKI TAKA T<span className="ball-icon">⚽</span>E</h1>
-          <p>TikTok Live Challenge</p>
+          
+          <div className="difficulty-selector">
+            <button 
+              className={`diff-btn ${difficulty === 'easy' ? 'active easy' : ''}`}
+              onClick={() => { setDifficulty('easy'); startNewGame(); }}
+            >
+              EASY
+            </button>
+            <button 
+              className={`diff-btn ${difficulty === 'medium' ? 'active medium' : ''}`}
+              onClick={() => { setDifficulty('medium'); startNewGame(); }}
+            >
+              MEDIUM
+            </button>
+            <button 
+              className={`diff-btn ${difficulty === 'hard' ? 'active hard' : ''}`}
+              onClick={() => { setDifficulty('hard'); startNewGame(); }}
+            >
+              HARD
+            </button>
+          </div>
         </div>
 
         <div className="board-container">
+          {isCompleted && (
+            <div className="completion-overlay">
+              <div className="completion-card">
+                <div className="ft-badge">FULL TIME</div>
+                <h2>MATCH COMPLETED</h2>
+                <div className="leaderboards-container">
+                  <div className="mvp-list">
+                    <h3>🏆 MATCH MVP</h3>
+                    {mvpStats.slice(0, 3).map((mvp, idx) => (
+                      <div key={mvp.uniqueId} className="mvp-row">
+                        <div className="mvp-rank">#{idx + 1}</div>
+                        {mvp.profilePictureUrl ? (
+                          <img src={mvp.profilePictureUrl} alt="avatar" className="mvp-avatar" />
+                        ) : (
+                          <div className="mvp-avatar-placeholder">{mvp.nickname.charAt(0)}</div>
+                        )}
+                        <div className="mvp-name">{mvp.nickname}</div>
+                        <div className="mvp-score">{mvp.score} pt</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mvp-list global-list">
+                    <h3>🌍 GLOBAL TOP 5</h3>
+                    {globalStats.map((mvp, idx) => (
+                      <div key={mvp.uniqueId} className="mvp-row">
+                        <div className="mvp-rank">#{idx + 1}</div>
+                        {mvp.profilePictureUrl ? (
+                          <img src={mvp.profilePictureUrl} alt="avatar" className="mvp-avatar" />
+                        ) : (
+                          <div className="mvp-avatar-placeholder">{mvp.nickname.charAt(0)}</div>
+                        )}
+                        <div className="mvp-name">{mvp.nickname}</div>
+                        <div className="mvp-score">{mvp.score} pt</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="countdown-container">
+                  <svg className="countdown-svg" viewBox="0 0 100 100">
+                    <circle className="countdown-bg" cx="50" cy="50" r="45"></circle>
+                    <circle 
+                      className="countdown-progress" 
+                      cx="50" cy="50" r="45"
+                      style={{ strokeDashoffset: `${283 - (283 * countdown) / 15}` }}
+                    ></circle>
+                  </svg>
+                  <div className="countdown-number">{countdown}</div>
+                  <div className="countdown-label">NEXT MATCH</div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="col-headers">
             {gridData.cols.map((col, idx) => (
               <div key={`col-${idx}`} className="header-cell">
@@ -450,6 +590,16 @@ export default function TikiTakaGame() {
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        <div className="like-progress-container">
+          <div className="like-progress-text">❤️ {Math.min(roundLikes, 1000)} / 1000 Tap-Tap for Clue!</div>
+          <div className="like-progress-bar">
+            <div 
+              className="like-progress-fill" 
+              style={{ width: `${Math.min((roundLikes / 1000) * 100, 100)}%` }}
+            ></div>
           </div>
         </div>
 
