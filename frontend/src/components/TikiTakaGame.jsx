@@ -362,30 +362,14 @@ export default function TikiTakaGame() {
           const sortedGlobal = Object.values(globalData).sort((a, b) => b.score - a.score).slice(0, 5);
           setGlobalStats(sortedGlobal);
 
-          // Reduced confetti for performance
-          const duration = 2000;
-          const end = Date.now() + duration;
-
-          (function frame() {
-            confetti({
-              particleCount: 2,
-              angle: 60,
-              spread: 40,
-              origin: { x: 0 },
-              colors: ['#10b981', '#ffffff', '#fbbf24']
-            });
-            confetti({
-              particleCount: 2,
-              angle: 120,
-              spread: 40,
-              origin: { x: 1 },
-              colors: ['#10b981', '#ffffff', '#fbbf24']
-            });
-
-            if (Date.now() < end) {
-              requestAnimationFrame(frame);
-            }
-          }());
+          // Single burst confetti for performance
+          confetti({
+            particleCount: 80,
+            spread: 80,
+            origin: { y: 0.6 },
+            colors: ['#f59e0b', '#fbbf24', '#ffffff'],
+            disableForReducedMotion: true
+          });
         } else {
           // Normal confetti (reduced)
           confetti({
