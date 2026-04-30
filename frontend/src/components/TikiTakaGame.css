@@ -538,13 +538,14 @@
 
 /* Completion Overlay (Football Broadcast Style) */
 .completion-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -569,9 +570,8 @@
 }
 
 .leaderboards-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  position: relative;
+  height: 240px;
   margin-bottom: 1rem;
 }
 
@@ -620,8 +620,24 @@
   border-radius: 8px;
   padding: 0.75rem;
   text-align: left;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  transition: opacity 0.8s ease, transform 0.8s ease;
   z-index: 2;
+}
+
+.mvp-list.fade-out {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-10px) scale(0.98);
+}
+
+.mvp-list.fade-in {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
 }
 
 .global-list {

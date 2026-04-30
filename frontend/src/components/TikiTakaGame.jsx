@@ -482,7 +482,7 @@ export default function TikiTakaGame() {
                 <div className="ft-badge">FULL TIME</div>
                 <h2>MATCH COMPLETED</h2>
                 <div className="leaderboards-container">
-                  <div className="mvp-list">
+                  <div className={`mvp-list ${countdown > 7 ? 'fade-in' : 'fade-out'}`}>
                     <h3>🏆 MATCH MVP</h3>
                     {mvpStats.slice(0, 3).map((mvp, idx) => (
                       <div key={mvp.uniqueId} className="mvp-row">
@@ -497,7 +497,7 @@ export default function TikiTakaGame() {
                       </div>
                     ))}
                   </div>
-                  <div className="mvp-list global-list">
+                  <div className={`mvp-list global-list ${countdown <= 7 ? 'fade-in' : 'fade-out'}`}>
                     <h3>🌍 GLOBAL TOP 5</h3>
                     {globalStats.map((mvp, idx) => (
                       <div key={mvp.uniqueId} className="mvp-row">
