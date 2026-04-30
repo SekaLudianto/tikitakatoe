@@ -109,6 +109,9 @@ const COUNTRY_CODES = {
   'USA': 'us', 'Mexico': 'mx', 'Canada': 'ca', 'Australia': 'au'
 };
 
+const EASY_CLUB_IDS = [418, 131, 13, 985, 281, 11, 631, 31, 148, 27, 16, 583, 506, 5, 46, 6195];
+const EASY_COUNTRIES = ['Brazil', 'Argentina', 'France', 'Germany', 'Spain', 'England', 'Portugal', 'Italy', 'Netherlands'];
+
 function generateSampleGrids(db, countPerDifficulty = 50) {
   const result = { easy: [], medium: [], hard: [] };
 
@@ -135,7 +138,11 @@ function generateSampleGrids(db, countPerDifficulty = 50) {
           if (type === 'club') {
             cols.push({ type: 'club', ...shuffledClubs.slice(3)[Math.floor(Math.random() * 5)], logoUrl: undefined });
           } else if (type === 'country') {
-            const country = db.countries[Math.floor(Math.random() * db.countries.length)];
+            let allowedCountries = db.countries;
+            if (difficulty === 'easy') {
+              allowedCountries = db.countries.filter(c => EASY_COUNTRIES.includes(c));
+            }
+            const country = allowedCountries[Math.floor(Math.random() * allowedCountries.length)];
             const code = COUNTRY_CODES[country] || 'un';
             cols.push({ type: 'country', id: country, name: country, logoUrl: `/flags/${code}.png` });
           } else if (type === 'position') {
@@ -228,7 +235,13 @@ async function main() {
   const clubTiers = {};
   for (const c of rawClubs) {
     TOP_CLUB_IDS[c.club_id] = shortenClubName(c.club_id, c.name);
-    clubTiers[c.club_id] = rank <= 20 ? 'easy' : (rank <= 50 ? 'medium' : 'hard');
+    if (EASY_CLUB_IDS.includes(c.club_id)) {
+      clubTiers[c.club_id] = 'easy';
+    } else if (rank <= 50) {
+      clubTiers[c.club_id] = 'medium';
+    } else {
+      clubTiers[c.club_id] = 'hard';
+    }
     rank++;
   }
   
