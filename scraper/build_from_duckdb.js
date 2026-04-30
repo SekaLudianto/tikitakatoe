@@ -235,7 +235,7 @@ async function main() {
   const clubTiers = {};
   for (const c of rawClubs) {
     TOP_CLUB_IDS[c.club_id] = shortenClubName(c.club_id, c.name);
-    if (EASY_CLUB_IDS.includes(c.club_id)) {
+    if (EASY_CLUB_IDS.includes(parseInt(c.club_id))) {
       clubTiers[c.club_id] = 'easy';
     } else if (rank <= 50) {
       clubTiers[c.club_id] = 'medium';
