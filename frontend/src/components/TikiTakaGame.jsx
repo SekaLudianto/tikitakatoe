@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { Trophy } from 'lucide-react';
-import gridsData from '../data/sample-grids.json';
 import './TikiTakaGame.css';
 
 const loadGlobalLeaderboard = () => {
@@ -62,6 +61,8 @@ function ClubLogo({ src, name, className }) {
 }
 
 export default function TikiTakaGame() {
+  const [gridsData, setGridsData] = useState(null);
+  const [gridsLoading, setGridsLoading] = useState(true);
   const [gridData, setGridData] = useState(null);
   const [cells, setCells] = useState(Array(9).fill(null));
   const [feed, setFeed] = useState([]);
@@ -86,8 +87,29 @@ export default function TikiTakaGame() {
   useEffect(() => { cellsRef.current = cells; }, [cells]);
   useEffect(() => { gridRef.current = gridData; }, [gridData]);
 
+  // Lazy-load sample-grids.json on mount (34MB file, not bundled)
+  useEffect(() => {
+    let cancelled = false;
+    setGridsLoading(true);
+    fetch('/sample-grids.json')
+      .then(res => res.json())
+      .then(data => {
+        if (!cancelled) {
+          setGridsData(data);
+          setGridsLoading(false);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load grids data:', err);
+        if (!cancelled) setGridsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   // Initialize a random grid without repeating until all are played
   const startNewGame = useCallback(() => {
+    if (!gridsData) return;
+
     let playedHistory = [];
     try {
       const historyStr = localStorage.getItem(`tikitaka_played_grids_${difficulty}`);
@@ -124,7 +146,7 @@ export default function TikiTakaGame() {
     setCountdown(15);
     setMvpStats([]);
     setRoundLikes(0);
-  }, [difficulty]);
+  }, [difficulty, gridsData]);
 
   // Automatic countdown for next game
   useEffect(() => {
@@ -141,8 +163,8 @@ export default function TikiTakaGame() {
     const globalData = loadGlobalLeaderboard();
     const sortedGlobal = Object.values(globalData).sort((a, b) => b.score - a.score).slice(0, 5); // Limit global to top 5
     setGlobalStats(sortedGlobal);
-    startNewGame();
-  }, [startNewGame]);
+    if (gridsData) startNewGame();
+  }, [startNewGame, gridsData]);
 
   // Fullscreen change listener
   useEffect(() => {
@@ -460,6 +482,19 @@ export default function TikiTakaGame() {
     }
     return '?';
   };
+
+  if (gridsLoading) {
+    return (
+      <div className="tikitaka-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="bg-blob blob-1"></div>
+        <div className="bg-blob blob-2"></div>
+        <div style={{ textAlign: 'center', zIndex: 10 }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'pulse 1.5s infinite' }}>⚽</div>
+          <div style={{ color: '#94a3b8', fontSize: '1.2rem', fontWeight: 500 }}>Loading game data...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!gridData) return null;
 
