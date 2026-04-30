@@ -222,11 +222,13 @@ async function main() {
   const db = new duckdb.Database(dbPath);
   const conn = db.connect();
   
-  console.log('⏳ Mencari Top 100 Klub berdasarkan Market Value...');
+  console.log('⏳ Mencari Top 100 Klub berdasarkan data penampilan...');
   const clubsQuery = `
-    SELECT club_id, name, total_market_value 
-    FROM clubs 
-    ORDER BY total_market_value DESC NULLS LAST 
+    SELECT c.club_id, c.name, COUNT(a.appearance_id) as app_count
+    FROM clubs c
+    JOIN appearances a ON c.club_id = a.player_club_id
+    GROUP BY c.club_id, c.name
+    ORDER BY app_count DESC
     LIMIT 100
   `;
   const rawClubs = await runQuery(conn, clubsQuery);
