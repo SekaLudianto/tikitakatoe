@@ -51,7 +51,17 @@ let db = null;
 let playerIndex = {}; // normalized name -> player data array
 
 function normalize(str) {
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-']/g, ' ').trim();
+  return str.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/ø/g, 'o')
+    .replace(/æ/g, 'ae')
+    .replace(/œ/g, 'oe')
+    .replace(/ß/g, 'ss')
+    .replace(/đ/g, 'd')
+    .replace(/ł/g, 'l')
+    .replace(/[-']/g, ' ')
+    .trim();
 }
 
 try {
@@ -79,6 +89,7 @@ try {
   }
   
   console.log(`✅ Database loaded: ${db.players.length} players, ${Object.keys(db.intersections).length} club intersections`);
+  console.log(`   Competitions: ${Object.keys(db.competitionIntersections || {}).length}, Jerseys: ${Object.keys(db.jerseyIntersections || {}).length}, Foot: ${Object.keys(db.footIntersections || {}).length}`);
 } catch (err) {
   console.error('❌ Failed to load database:', err.message);
   process.exit(1);
@@ -126,15 +137,26 @@ function validateGuess(guess, header1, header2) {
   } else if (header1.type === 'position' && header2.type === 'club') {
     intersectionKey = `${header2.id}-position:${header1.name}`;
     lookupTable = db.positionIntersections;
-  } else if (header1.type === 'country' && header2.type === 'country') {
-    // Country x Country - search all players matching both countries
-    // This is rare but handle it
-    return searchPlayersDirectly(searchName, header1, header2);
-  } else if (header1.type === 'position' && header2.type === 'position') {
-    return searchPlayersDirectly(searchName, header1, header2);
-  } else if (header1.type === 'country' && header2.type === 'position') {
-    return searchPlayersDirectly(searchName, header1, header2);
-  } else if (header1.type === 'position' && header2.type === 'country') {
+  } else if (header1.type === 'club' && header2.type === 'competition') {
+    intersectionKey = `${header1.id}-comp:${header2.id}`;
+    lookupTable = db.competitionIntersections;
+  } else if (header1.type === 'competition' && header2.type === 'club') {
+    intersectionKey = `${header2.id}-comp:${header1.id}`;
+    lookupTable = db.competitionIntersections;
+  } else if (header1.type === 'club' && header2.type === 'jersey') {
+    intersectionKey = `${header1.id}-jersey:${header2.id}`;
+    lookupTable = db.jerseyIntersections;
+  } else if (header1.type === 'jersey' && header2.type === 'club') {
+    intersectionKey = `${header2.id}-jersey:${header1.id}`;
+    lookupTable = db.jerseyIntersections;
+  } else if (header1.type === 'club' && header2.type === 'foot') {
+    intersectionKey = `${header1.id}-foot:${header2.id}`;
+    lookupTable = db.footIntersections;
+  } else if (header1.type === 'foot' && header2.type === 'club') {
+    intersectionKey = `${header2.id}-foot:${header1.id}`;
+    lookupTable = db.footIntersections;
+  } else {
+    // Any other combo: fallback to direct search
     return searchPlayersDirectly(searchName, header1, header2);
   }
 
@@ -149,12 +171,14 @@ function validateGuess(guess, header1, header2) {
     const nameParts = normalizedName.split(' ');
     const lastName = nameParts[nameParts.length - 1];
 
-    if (
-      normalizedName.includes(searchName) ||
-      searchName.includes(normalizedName) ||
-      lastName === searchName ||
-      (searchName.length >= 4 && nameParts.some(part => part === searchName))
-    ) {
+    const isExactMatch = normalizedName === searchName || lastName === searchName;
+    const isPrefixMatch = searchName.length >= 4 && (
+      nameParts.some(part => part === searchName) ||
+      lastName.startsWith(searchName) ||
+      normalizedName.startsWith(searchName)
+    );
+
+    if (isExactMatch || isPrefixMatch) {
       return {
         id: candidate.id,
         name: candidate.name,
@@ -175,12 +199,14 @@ function searchPlayersDirectly(searchName, header1, header2) {
     const nameParts = normalizedName.split(' ');
     const lastName = nameParts[nameParts.length - 1];
 
-    const nameMatch = (
-      normalizedName.includes(searchName) ||
-      searchName.includes(normalizedName) ||
-      lastName === searchName ||
-      (searchName.length >= 4 && nameParts.some(part => part === searchName))
+    const isExactMatch = normalizedName === searchName || lastName === searchName;
+    const isPrefixMatch = searchName.length >= 4 && (
+      nameParts.some(part => part === searchName) ||
+      lastName.startsWith(searchName) ||
+      normalizedName.startsWith(searchName)
     );
+
+    const nameMatch = isExactMatch || isPrefixMatch;
 
     if (!nameMatch) continue;
 
@@ -206,6 +232,25 @@ function matchesHeader(player, header) {
     return player.country === header.name;
   } else if (header.type === 'position') {
     return player.position === header.name;
+  } else if (header.type === 'foot') {
+    return player.foot === header.id;
+  } else if (header.type === 'competition' || header.type === 'jersey') {
+    // These require cross-referencing with intersection data — fall through
+    // Direct search for these is less reliable, so check intersection tables
+    if (header.type === 'competition' && db.competitionIntersections) {
+      return player.clubs && player.clubs.some(c => {
+        const key = `${c.id}-comp:${header.id}`;
+        const entries = db.competitionIntersections[key];
+        return entries && entries.some(e => e.id === player.id);
+      });
+    }
+    if (header.type === 'jersey' && db.jerseyIntersections) {
+      return player.clubs && player.clubs.some(c => {
+        const key = `${c.id}-jersey:${header.id}`;
+        const entries = db.jerseyIntersections[key];
+        return entries && entries.some(e => e.id === player.id);
+      });
+    }
   }
   return false;
 }

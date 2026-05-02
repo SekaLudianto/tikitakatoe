@@ -4,14 +4,16 @@ const path = require('path');
 
 const TOP_COUNTRIES = [
   // South America
-  'Brazil', 'Argentina', 'Colombia', 'Uruguay', 'Ecuador', 'Chile', 'Peru',
+  'Brazil', 'Argentina', 'Colombia', 'Uruguay', 'Ecuador', 'Chile', 'Peru', 'Paraguay', 'Venezuela',
   // Europe
   'France', 'Germany', 'Spain', 'England', 'Portugal', 'Italy', 'Netherlands', 
   'Belgium', 'Croatia', 'Switzerland', 'Denmark', 'Austria', 'Turkey', 'Wales', 'Scotland', 'Serbia', 'Poland', 'Sweden',
+  'Norway', 'Czech Republic', 'Romania', 'Greece', 'Hungary', 'Ukraine', 'Bosnia-Herzegovina', 'Republic of Ireland', 'Northern Ireland',
+  'North Macedonia', 'Montenegro', 'Iceland', 'Finland',
   // Africa
-  'Nigeria', 'Senegal', 'Morocco', 'Ghana', 'Ivory Coast', 'Cameroon', 'Algeria', 'Egypt',
-  // Asia & CONCACAF
-  'Japan', 'South Korea', 'USA', 'Mexico', 'Canada', 'Australia'
+  'Nigeria', 'Senegal', 'Morocco', 'Ghana', 'Ivory Coast', 'Cameroon', 'Algeria', 'Egypt', 'Tunisia', 'DR Congo', 'Mali', 'Guinea',
+  // Asia & CONCACAF & Oceania
+  'Japan', 'South Korea', 'USA', 'Mexico', 'Canada', 'Australia', 'Iran', 'Saudi Arabia'
 ];
 
 const CLUB_ALIASES = {
@@ -63,7 +65,51 @@ const CLUB_ALIASES = {
   371: 'Celtic',
   124: 'Rangers',
   189: 'Boca Juniors',
-  209: 'River Plate'
+  209: 'River Plate',
+  // Additional clubs for expanded dataset
+  416: 'Torino',
+  410: 'Udinese',
+  1025: 'Bologna',
+  6574: 'Sassuolo',
+  2919: 'Sampdoria',
+  252: 'Genoa',
+  749: 'Cagliari',
+  2462: 'Wolfsburg',
+  86: 'Eintracht Frankfurt',
+  24: 'Werder Bremen',
+  18: 'Borussia Mönchengladbach',
+  533: 'Hertha BSC',
+  82: 'Schalke 04',
+  167: 'Hamburg SV',
+  714: '1. FC Köln',
+  89: 'Real Valladolid',
+  237: 'Celta Vigo',
+  940: 'RCD Mallorca',
+  1533: 'Getafe',
+  331: 'Rayo Vallecano',
+  3368: 'Girona',
+  2282: 'Lille',
+  273: 'Rennes',
+  995: 'Nice',
+  738: 'FC Nantes',
+  1158: 'Lens',
+  1082: 'Strasbourg',
+  610: 'Ajax',
+  399: 'Twente',
+  324: 'AZ Alkmaar',
+  2420: 'Club Brugge',
+  58: 'Anderlecht',
+  23: 'Shakhtar Donetsk',
+  660: 'Dynamo Kyiv',
+  252: 'Genoa',
+  583: 'Paris Saint-Germain',
+  940: 'Independiente',
+  614: 'São Paulo',
+  873: 'Flamengo',
+  1019: 'Palmeiras',
+  243: 'Santos',
+  10: 'Grêmio',
+  1062: 'Internacional',
 };
 
 function shortenClubName(id, officialName) {
@@ -82,10 +128,34 @@ function shortenClubName(id, officialName) {
   return name.trim();
 }
 
-// Kita akan mengambil TOP 100 klub secara dinamis dari DuckDB
+// Kita akan mengambil TOP 150 klub secara dinamis dari DuckDB
 let TOP_CLUB_IDS = {};
 
 const TOP_POSITIONS = ['Attack', 'Midfield', 'Defender', 'Goalkeeper'];
+const TOP_COMPETITIONS = {
+  // European club competitions
+  'GB1': { name: 'Premier League', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', tier: 'all' },
+  'ES1': { name: 'La Liga', emoji: '🇪🇸', tier: 'all' },
+  'IT1': { name: 'Serie A', emoji: '🇮🇹', tier: 'all' },
+  'L1':  { name: 'Bundesliga', emoji: '🇩🇪', tier: 'all' },
+  'FR1': { name: 'Ligue 1', emoji: '🇫🇷', tier: 'all' },
+  'CL':  { name: 'Champions League', emoji: '🏆', tier: 'easy' },
+  'EL':  { name: 'Europa League', emoji: '🥈', tier: 'easy' },
+  'NL1': { name: 'Eredivisie', emoji: '🇳🇱', tier: 'all' },
+  'PO1': { name: 'Liga Portugal', emoji: '🇵🇹', tier: 'all' },
+  'TR1': { name: 'Süper Lig', emoji: '🇹🇷', tier: 'all' },
+  // Non-European leagues (via player_valuations)
+  'MLS1': { name: 'MLS', emoji: '🇺🇸', tier: 'hard' },
+  'SA1':  { name: 'Saudi Pro League', emoji: '🇸🇦', tier: 'medium' },
+  'JAP1': { name: 'J1 League', emoji: '🇯🇵', tier: 'hard' },
+  'BRA1': { name: 'Brasileirão', emoji: '🇧🇷', tier: 'medium' },
+  'ARG1': { name: 'Liga Argentina', emoji: '🇦🇷', tier: 'medium' },
+  'MEX1': { name: 'Liga MX', emoji: '🇲🇽', tier: 'hard' },
+  'AUS1': { name: 'A-League', emoji: '🇦🇺', tier: 'hard' },
+  'RSK1': { name: 'K League 1', emoji: '🇰🇷', tier: 'hard' },
+};
+const ICONIC_JERSEY_NUMBERS = ['1', '2', '3', '5', '6', '7', '8', '9', '10', '11'];
+const FOOT_VALUES = ['left', 'right', 'both'];
 const OUTPUT_DIR = path.join(__dirname, '..', 'data');
 
 // Promisify duckdb query
@@ -106,7 +176,12 @@ const COUNTRY_CODES = {
   'Ecuador': 'ec', 'Chile': 'cl', 'Peru': 'pe', 'Switzerland': 'ch', 'Denmark': 'dk',
   'Austria': 'at', 'Turkey': 'tr', 'Wales': 'gb-wls', 'Scotland': 'gb-sct', 'Serbia': 'rs',
   'Poland': 'pl', 'Sweden': 'se', 'Algeria': 'dz', 'Egypt': 'eg', 'South Korea': 'kr',
-  'USA': 'us', 'Mexico': 'mx', 'Canada': 'ca', 'Australia': 'au'
+  'USA': 'us', 'Mexico': 'mx', 'Canada': 'ca', 'Australia': 'au',
+  'Paraguay': 'py', 'Venezuela': 've', 'Norway': 'no', 'Czech Republic': 'cz', 'Romania': 'ro',
+  'Greece': 'gr', 'Hungary': 'hu', 'Ukraine': 'ua', 'Bosnia-Herzegovina': 'ba',
+  'Republic of Ireland': 'ie', 'Northern Ireland': 'gb-nir', 'North Macedonia': 'mk',
+  'Montenegro': 'me', 'Iceland': 'is', 'Finland': 'fi', 'Tunisia': 'tn',
+  'DR Congo': 'cd', 'Mali': 'ml', 'Guinea': 'gn', 'Iran': 'ir', 'Saudi Arabia': 'sa'
 };
 
 const EASY_CLUB_IDS = [418, 131, 13, 985, 281, 11, 631, 31, 148, 27, 16, 583, 506, 5, 46, 6195];
@@ -114,6 +189,81 @@ const EASY_COUNTRIES = ['Brazil', 'Argentina', 'France', 'Germany', 'Spain', 'En
 
 function generateSampleGrids(db, countPerDifficulty = 50) {
   const result = { easy: [], medium: [], hard: [] };
+
+  // All available column types with weights (higher weight = more likely to appear)
+  const ALL_COL_TYPES = ['club', 'country', 'position', 'competition', 'jersey', 'foot'];
+
+  function lookupIntersection(clubId, col) {
+    let key, answers;
+    if (col.type === 'club') {
+      key = [clubId, col.id].sort((a, b) => a - b).join('-');
+      answers = db.intersections[key];
+    } else if (col.type === 'country') {
+      key = `${clubId}-country:${col.id}`;
+      answers = db.countryIntersections[key];
+    } else if (col.type === 'position') {
+      key = `${clubId}-position:${col.id}`;
+      answers = db.positionIntersections[key];
+    } else if (col.type === 'competition') {
+      key = `${clubId}-comp:${col.id}`;
+      answers = db.competitionIntersections[key];
+    } else if (col.type === 'jersey') {
+      key = `${clubId}-jersey:${col.id}`;
+      answers = db.jerseyIntersections[key];
+    } else if (col.type === 'foot') {
+      key = `${clubId}-foot:${col.id}`;
+      answers = db.footIntersections[key];
+    }
+    return answers;
+  }
+
+  function makeColHeader(type, difficulty) {
+    if (type === 'club') {
+      return null; // handled separately
+    } else if (type === 'country') {
+      let allowedCountries = db.countries;
+      if (difficulty === 'easy') {
+        allowedCountries = db.countries.filter(c => EASY_COUNTRIES.includes(c));
+      }
+      const country = allowedCountries[Math.floor(Math.random() * allowedCountries.length)];
+      const code = COUNTRY_CODES[country] || 'un';
+      return { type: 'country', id: country, name: country, logoUrl: `/flags/${code}.png` };
+    } else if (type === 'position') {
+      const pos = db.positions[Math.floor(Math.random() * db.positions.length)];
+      const posText = pos === 'Goalkeeper' ? 'GK' : pos === 'Defender' ? 'DEF' : pos === 'Midfield' ? 'MID' : 'ATT';
+      return { type: 'position', id: pos, name: pos, textLogo: posText };
+    } else if (type === 'competition') {
+      const compIds = Object.keys(db.competitionIntersections)
+        .map(k => k.split('-comp:')[1])
+        .filter(Boolean);
+      const uniqueComps = [...new Set(compIds)];
+      if (uniqueComps.length === 0) return null;
+      
+      // Filter by difficulty tier
+      const allowedComps = uniqueComps.filter(cid => {
+        const info = TOP_COMPETITIONS[cid];
+        if (!info) return false;
+        if (difficulty === 'easy') return true; // Easy gets ALL comps
+        if (difficulty === 'medium') return info.tier !== 'easy'; // Medium excludes CL/EL
+        return info.tier === 'hard' || info.tier === 'medium'; // Hard prefers non-EU + medium
+      });
+      
+      if (allowedComps.length === 0) return null;
+      const compId = allowedComps[Math.floor(Math.random() * allowedComps.length)];
+      const compInfo = TOP_COMPETITIONS[compId];
+      if (!compInfo) return null;
+      return { type: 'competition', id: compId, name: compInfo.name, logoUrl: `/logos/competitions/${compId.toLowerCase()}.png` };
+    } else if (type === 'jersey') {
+      const num = ICONIC_JERSEY_NUMBERS[Math.floor(Math.random() * ICONIC_JERSEY_NUMBERS.length)];
+      return { type: 'jersey', id: num, name: `#${num}` };
+    } else if (type === 'foot') {
+      const foot = FOOT_VALUES[Math.floor(Math.random() * FOOT_VALUES.length)];
+      const footLabel = foot === 'left' ? 'Left Foot' : foot === 'right' ? 'Right Foot' : 'Both Feet';
+      const footEmoji = foot === 'left' ? '⬅️🦶' : foot === 'right' ? '➡🦶' : '🦶🦶';
+      return { type: 'foot', id: foot, name: footLabel, textLogo: footEmoji };
+    }
+    return null;
+  }
 
   for (const difficulty of ['easy', 'medium', 'hard']) {
     let allowedClubs;
@@ -132,23 +282,28 @@ function generateSampleGrids(db, countPerDifficulty = 50) {
         const shuffledClubs = [...allowedClubs].sort(() => Math.random() - 0.5);
         const rows = shuffledClubs.slice(0, 3).map(c => ({ type: 'club', ...c }));
         
-        const colTypes = ['club', 'country', 'position'].sort(() => Math.random() - 0.5);
+        // Pick 3 unique column types (always include variety)
+        const shuffledTypes = [...ALL_COL_TYPES].sort(() => Math.random() - 0.5);
+        const selectedTypes = [];
+        const usedTypes = new Set();
+        for (const t of shuffledTypes) {
+          if (selectedTypes.length >= 3) break;
+          if (usedTypes.has(t)) continue;
+          usedTypes.add(t);
+          selectedTypes.push(t);
+        }
+
         const cols = [];
-        for (const type of colTypes) {
+        for (const type of selectedTypes) {
           if (type === 'club') {
-            cols.push({ type: 'club', ...shuffledClubs.slice(3)[Math.floor(Math.random() * 5)], logoUrl: undefined });
-          } else if (type === 'country') {
-            let allowedCountries = db.countries;
-            if (difficulty === 'easy') {
-              allowedCountries = db.countries.filter(c => EASY_COUNTRIES.includes(c));
+            const remaining = shuffledClubs.slice(3);
+            if (remaining.length > 0) {
+              const pick = remaining[Math.floor(Math.random() * Math.min(remaining.length, 5))];
+              cols.push({ type: 'club', ...pick, logoUrl: undefined });
             }
-            const country = allowedCountries[Math.floor(Math.random() * allowedCountries.length)];
-            const code = COUNTRY_CODES[country] || 'un';
-            cols.push({ type: 'country', id: country, name: country, logoUrl: `/flags/${code}.png` });
-          } else if (type === 'position') {
-            const pos = db.positions[Math.floor(Math.random() * db.positions.length)];
-            const posText = pos === 'Goalkeeper' ? 'GK' : pos === 'Defender' ? 'DEF' : pos === 'Midfield' ? 'MID' : 'ATT';
-            cols.push({ type: 'position', id: pos, name: pos, textLogo: posText });
+          } else {
+            const header = makeColHeader(type, difficulty);
+            if (header) cols.push(header);
           }
         }
         
@@ -159,19 +314,7 @@ function generateSampleGrids(db, countPerDifficulty = 50) {
         
         for (const row of rows) {
           for (const col of cols) {
-            let key;
-            let answers;
-            
-            if (col.type === 'club') {
-              key = [row.id, col.id].sort((a, b) => a - b).join('-');
-              answers = db.intersections[key];
-            } else if (col.type === 'country') {
-              key = `${row.id}-country:${col.id}`;
-              answers = db.countryIntersections[key];
-            } else if (col.type === 'position') {
-              key = `${row.id}-position:${col.id}`;
-              answers = db.positionIntersections[key];
-            }
+            const answers = lookupIntersection(row.id, col);
             
             if (!answers || answers.length === 0) {
               valid = false;
@@ -198,7 +341,9 @@ function generateSampleGrids(db, countPerDifficulty = 50) {
               type: r.type, id: r.id, name: r.name, logoUrl: `/logos/${r.id}.png`
             })),
             cols: cols.map(c => ({
-              type: c.type, id: c.id, name: c.name, logoUrl: c.type === 'club' ? `/logos/${c.id}.png` : c.logoUrl, textLogo: c.textLogo
+              type: c.type, id: c.id, name: c.name,
+              logoUrl: c.type === 'club' ? `/logos/${c.id}.png` : c.logoUrl,
+              textLogo: c.textLogo
             })),
             cells,
           });
@@ -222,14 +367,14 @@ async function main() {
   const db = new duckdb.Database(dbPath);
   const conn = db.connect();
   
-  console.log('⏳ Mencari Top 100 Klub berdasarkan data penampilan...');
+  console.log('⏳ Mencari Top 150 Klub berdasarkan data penampilan...');
   const clubsQuery = `
     SELECT c.club_id, c.name, COUNT(a.appearance_id) as app_count
     FROM clubs c
     JOIN appearances a ON c.club_id = a.player_club_id
     GROUP BY c.club_id, c.name
     ORDER BY app_count DESC
-    LIMIT 100
+    LIMIT 150
   `;
   const rawClubs = await runQuery(conn, clubsQuery);
   
@@ -338,12 +483,13 @@ async function main() {
       p.name, 
       p.country_of_citizenship as country, 
       p.position, 
+      p.foot,
       p.image_url as imageUrl, 
       LIST(DISTINCT a.player_club_id) as club_ids
     FROM players p
     JOIN appearances a ON p.player_id = a.player_id
     WHERE a.player_club_id IN (${topClubIdsList})
-    GROUP BY p.player_id, p.name, p.country_of_citizenship, p.position, p.image_url
+    GROUP BY p.player_id, p.name, p.country_of_citizenship, p.position, p.foot, p.image_url
   `;
   const rawPlayers = await runQuery(conn, query);
   console.log(`   ✅ ${rawPlayers.length} pemain dari appearances`);
@@ -399,7 +545,7 @@ async function main() {
     for (let i = 0; i < extraIdArr.length; i += 500) {
       const batch = extraIdArr.slice(i, i + 500);
       const extraQuery = `
-        SELECT player_id, name, country_of_citizenship as country, position, image_url as imageUrl
+        SELECT player_id, name, country_of_citizenship as country, position, foot, image_url as imageUrl
         FROM players WHERE player_id IN (${batch.join(',')})
       `;
       const extraPlayers = await runQuery(conn, extraQuery);
@@ -442,24 +588,84 @@ async function main() {
       name: row.name || 'Unknown',
       country: row.country || '',
       position: row.position || '',
+      foot: row.foot || '',
       imageUrl: row.imageUrl || '',
       clubs: validClubs
     });
   }
 
+  // ==================== STEP 7: Query jersey numbers ====================
+  console.log('⏳ Mengambil data nomor punggung dari game_lineups...');
+  const jerseyQuery = `
+    SELECT gl.player_id, gl.number, gl.club_id
+    FROM game_lineups gl
+    WHERE gl.number IS NOT NULL AND gl.number != '' AND gl.number != '-'
+    AND gl.club_id IN (${topClubIdsList})
+  `;
+  const jerseyRows = await runQuery(conn, jerseyQuery);
+  const playerJerseys = {}; // player_id -> Set<{ number, clubId }>
+  for (const row of jerseyRows) {
+    const clubId = parseInt(row.club_id);
+    if (!TOP_CLUB_IDS[clubId]) continue;
+    if (!ICONIC_JERSEY_NUMBERS.includes(row.number)) continue;
+    if (!playerJerseys[row.player_id]) playerJerseys[row.player_id] = new Set();
+    playerJerseys[row.player_id].add(`${clubId}:${row.number}`);
+  }
+  console.log(`   ✅ ${Object.keys(playerJerseys).length} pemain dengan nomor punggung ikonik`);
+
+  // ==================== STEP 8: Query competitions ====================
+  console.log('⏳ Mengambil data kompetisi dari appearances...');
+  const compQuery = `
+    SELECT DISTINCT a.player_id, a.competition_id, a.player_club_id
+    FROM appearances a
+    WHERE a.player_club_id IN (${topClubIdsList})
+    AND a.competition_id IN (${Object.keys(TOP_COMPETITIONS).map(c => `'${c}'`).join(',')})
+  `;
+  const compRows = await runQuery(conn, compQuery);
+  const playerComps = {}; // player_id -> Set<{ compId, clubId }>
+  for (const row of compRows) {
+    const clubId = parseInt(row.player_club_id);
+    if (!TOP_CLUB_IDS[clubId]) continue;
+    if (!playerComps[row.player_id]) playerComps[row.player_id] = new Set();
+    playerComps[row.player_id].add(`${clubId}:${row.competition_id}`);
+  }
+  console.log(`   ✅ ${Object.keys(playerComps).length} pemain dengan data kompetisi`);
+
+  // ==================== STEP 8b: Query non-European league data from player_valuations ====================
+  console.log('⏳ Mengambil data liga non-Eropa dari player_valuations...');
+  const NON_EU_LEAGUE_IDS = ['MLS1', 'SA1', 'JAP1', 'BRA1', 'ARG1', 'MEX1', 'AUS1', 'RSK1'];
+  const nonEuQuery = `
+    SELECT DISTINCT pv.player_id, pv.player_club_domestic_competition_id as league_id, pv.current_club_id
+    FROM player_valuations pv
+    WHERE pv.player_club_domestic_competition_id IN (${NON_EU_LEAGUE_IDS.map(l => `'${l}'`).join(',')})
+  `;
+  const nonEuRows = await runQuery(conn, nonEuQuery);
+  // Build player -> Set<leagueId> mapping
+  const playerNonEuLeagues = {};
+  for (const row of nonEuRows) {
+    if (!playerNonEuLeagues[row.player_id]) playerNonEuLeagues[row.player_id] = new Set();
+    playerNonEuLeagues[row.player_id].add(row.league_id);
+  }
+  console.log(`   ✅ ${Object.keys(playerNonEuLeagues).length} pemain dengan data liga non-Eropa`);
+
+  // ==================== BUILD INTERSECTIONS ====================
   const intersections = {};
   const countryIntersections = {};
   const positionIntersections = {};
+  const competitionIntersections = {};
+  const jerseyIntersections = {};
+  const footIntersections = {};
   
   for (const player of gamePlayers) {
     const clubIds = player.clubs.map(c => c.id);
+    const pEntry = { id: player.id, name: player.name, imageUrl: player.imageUrl };
     
     // Club-Club
     for (let i = 0; i < clubIds.length; i++) {
       for (let j = i + 1; j < clubIds.length; j++) {
         const key = [clubIds[i], clubIds[j]].sort((a, b) => a - b).join('-');
         if (!intersections[key]) intersections[key] = [];
-        intersections[key].push({ id: player.id, name: player.name, imageUrl: player.imageUrl });
+        intersections[key].push(pEntry);
       }
     }
     
@@ -468,7 +674,7 @@ async function main() {
       for (const club of player.clubs) {
         const key = `${club.id}-country:${player.country}`;
         if (!countryIntersections[key]) countryIntersections[key] = [];
-        countryIntersections[key].push({ id: player.id, name: player.name, imageUrl: player.imageUrl });
+        countryIntersections[key].push(pEntry);
       }
     }
     
@@ -477,7 +683,51 @@ async function main() {
       for (const club of player.clubs) {
         const key = `${club.id}-position:${player.position}`;
         if (!positionIntersections[key]) positionIntersections[key] = [];
-        positionIntersections[key].push({ id: player.id, name: player.name, imageUrl: player.imageUrl });
+        positionIntersections[key].push(pEntry);
+      }
+    }
+
+    // Club-Foot
+    if (player.foot && FOOT_VALUES.includes(player.foot)) {
+      for (const club of player.clubs) {
+        const key = `${club.id}-foot:${player.foot}`;
+        if (!footIntersections[key]) footIntersections[key] = [];
+        footIntersections[key].push(pEntry);
+      }
+    }
+
+    // Club-Competition
+    if (playerComps[player.id]) {
+      for (const entry of playerComps[player.id]) {
+        const [clubId, compId] = entry.split(':');
+        if (player.clubs.some(c => c.id === parseInt(clubId))) {
+          const key = `${clubId}-comp:${compId}`;
+          if (!competitionIntersections[key]) competitionIntersections[key] = [];
+          competitionIntersections[key].push(pEntry);
+        }
+      }
+    }
+
+    // Club-Jersey
+    if (playerJerseys[player.id]) {
+      for (const entry of playerJerseys[player.id]) {
+        const [clubId, number] = entry.split(':');
+        if (player.clubs.some(c => c.id === parseInt(clubId))) {
+          const key = `${clubId}-jersey:${number}`;
+          if (!jerseyIntersections[key]) jerseyIntersections[key] = [];
+          jerseyIntersections[key].push(pEntry);
+        }
+      }
+    }
+
+    // Club-NonEU-League (player played at club X AND was at some point in league Y)
+    if (playerNonEuLeagues[player.id]) {
+      for (const leagueId of playerNonEuLeagues[player.id]) {
+        for (const club of player.clubs) {
+          const key = `${club.id}-comp:${leagueId}`;
+          if (!competitionIntersections[key]) competitionIntersections[key] = [];
+          competitionIntersections[key].push(pEntry);
+        }
       }
     }
   }
@@ -500,6 +750,14 @@ async function main() {
     }))
     .sort((a, b) => b.pairCount - a.pairCount);
 
+  console.log(`\n📊 Intersection stats:`);
+  console.log(`   Club-Club: ${Object.keys(intersections).length}`);
+  console.log(`   Club-Country: ${Object.keys(countryIntersections).length}`);
+  console.log(`   Club-Position: ${Object.keys(positionIntersections).length}`);
+  console.log(`   Club-Competition: ${Object.keys(competitionIntersections).length}`);
+  console.log(`   Club-Jersey: ${Object.keys(jerseyIntersections).length}`);
+  console.log(`   Club-Foot: ${Object.keys(footIntersections).length}`);
+
   const gameDb = {
     meta: {
       source: 'transfermarkt-datasets (DuckDB)',
@@ -510,10 +768,16 @@ async function main() {
     clubs: usableClubs,
     countries: TOP_COUNTRIES,
     positions: TOP_POSITIONS,
+    competitions: TOP_COMPETITIONS,
+    jerseyNumbers: ICONIC_JERSEY_NUMBERS,
+    footValues: FOOT_VALUES,
     players: gamePlayers,
     intersections,
     countryIntersections,
     positionIntersections,
+    competitionIntersections,
+    jerseyIntersections,
+    footIntersections,
   };
 
   if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -522,8 +786,8 @@ async function main() {
   fs.writeFileSync(dbPathOut, JSON.stringify(gameDb, null, 2));
   console.log(`\n💾 Tersimpan: ${dbPathOut} (${(fs.statSync(dbPathOut).size / 1024).toFixed(0)} KB)`);
 
-  console.log('\n🧪 Generating 200 puzzle grids per difficulty...\n');
-  const sampleGrids = generateSampleGrids(gameDb, 200);
+  console.log('\n🧪 Generating 2500 puzzle grids per difficulty...\n');
+  const sampleGrids = generateSampleGrids(gameDb, 2500);
   
   const gridsPath = path.join(OUTPUT_DIR, 'sample-grids.json');
   fs.writeFileSync(gridsPath, JSON.stringify(sampleGrids, null, 2));

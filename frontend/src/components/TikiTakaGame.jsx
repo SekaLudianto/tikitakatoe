@@ -60,6 +60,70 @@ function ClubLogo({ src, name, className }) {
   );
 }
 
+function JerseyBadge({ number }) {
+  return (
+    <div className="jersey-badge" title={`#${number}`}>
+      <svg viewBox="0 0 80 90" className="jersey-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id={`jerseyGrad-${number}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="100%" stopColor="#1e40af" />
+          </linearGradient>
+          <linearGradient id={`jerseyShine-${number}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.15)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
+          </linearGradient>
+        </defs>
+        {/* Shirt body */}
+        <path
+          d="M15 28 L5 20 L0 35 L12 38 L12 85 C12 87 14 89 16 89 L64 89 C66 89 68 87 68 85 L68 38 L80 35 L75 20 L65 28 L58 18 C55 14 50 12 40 12 C30 12 25 14 22 18 Z"
+          fill={`url(#jerseyGrad-${number})`}
+          stroke="rgba(255,255,255,0.35)"
+          strokeWidth="1.5"
+        />
+        {/* Shine overlay */}
+        <path
+          d="M15 28 L5 20 L0 35 L12 38 L12 85 C12 87 14 89 16 89 L64 89 C66 89 68 87 68 85 L68 38 L80 35 L75 20 L65 28 L58 18 C55 14 50 12 40 12 C30 12 25 14 22 18 Z"
+          fill={`url(#jerseyShine-${number})`}
+        />
+        {/* Collar / neckline */}
+        <path
+          d="M30 12 C32 17 35 19 40 19 C45 19 48 17 50 12"
+          fill="none"
+          stroke="rgba(255,255,255,0.5)"
+          strokeWidth="2"
+        />
+        {/* Number */}
+        <text
+          x="40"
+          y="64"
+          textAnchor="middle"
+          className="jersey-number"
+        >
+          {number}
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+function renderHeader(header) {
+  if (header.type === 'jersey') {
+    return <JerseyBadge number={header.id} />;
+  }
+  if (header.type === 'competition' && header.logoUrl) {
+    return <ClubLogo src={header.logoUrl} name={header.name} className="club-logo" />;
+  }
+  if (header.textLogo) {
+    return <div className="text-logo">{header.textLogo}</div>;
+  }
+  if (header.logoUrl) {
+    return <ClubLogo src={header.logoUrl} name={header.name} className="club-logo" />;
+  }
+  return <div className="text-logo">{header.name.slice(0, 3).toUpperCase()}</div>;
+}
+
 export default function TikiTakaGame() {
   const [gridsData, setGridsData] = useState(null);
   const [gridsLoading, setGridsLoading] = useState(true);
@@ -77,11 +141,15 @@ export default function TikiTakaGame() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
   const [roundLikes, setRoundLikes] = useState(0);
+  const [levelVotes, setLevelVotes] = useState(0);
+  const [levelDownVotes, setLevelDownVotes] = useState(0);
+  const [roseVotes, setRoseVotes] = useState(0);
   
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
   const gridRef = useRef(null);
   const cellsRef = useRef(cells);
+  const usedPlayersRef = useRef(new Set()); // Track used player names to prevent same player filling multiple cells
 
   // Keep cellsRef in sync
   useEffect(() => { cellsRef.current = cells; }, [cells]);
@@ -107,16 +175,18 @@ export default function TikiTakaGame() {
   }, []);
 
   // Initialize a random grid without repeating until all are played
-  const startNewGame = useCallback(() => {
+  const startNewGame = useCallback((overrideDiff) => {
     if (!gridsData) return;
+    
+    const targetDiff = overrideDiff || difficulty;
 
     let playedHistory = [];
     try {
-      const historyStr = localStorage.getItem(`tikitaka_played_grids_${difficulty}`);
+      const historyStr = localStorage.getItem(`tikitaka_played_grids_${targetDiff}`);
       if (historyStr) playedHistory = JSON.parse(historyStr);
     } catch (e) {}
 
-    const availableGrids = gridsData[difficulty] || gridsData.medium;
+    const availableGrids = gridsData[targetDiff] || gridsData.medium;
 
     let availableIndices = [];
     for (let i = 0; i < availableGrids.length; i++) {
@@ -136,7 +206,7 @@ export default function TikiTakaGame() {
 
     playedHistory.push(randomIndex);
     try {
-      localStorage.setItem(`tikitaka_played_grids_${difficulty}`, JSON.stringify(playedHistory));
+      localStorage.setItem(`tikitaka_played_grids_${targetDiff}`, JSON.stringify(playedHistory));
     } catch (e) {}
 
     setGridData(chosenGrid);
@@ -146,6 +216,7 @@ export default function TikiTakaGame() {
     setCountdown(15);
     setMvpStats([]);
     setRoundLikes(0);
+    usedPlayersRef.current = new Set(); // Reset used players for new game
   }, [difficulty, gridsData]);
 
   // Automatic countdown for next game
@@ -219,16 +290,29 @@ export default function TikiTakaGame() {
             addFeedMessage(msg.uniqueId, 'joined the stream', false);
           }
 
-          if (msg.type === 'gift') {
-            addFeedMessage(msg.uniqueId, `sent ${msg.repeatCount}x ${msg.giftName} 🎁`, false);
-          }
-
-          if (msg.type === 'follow') {
-            addFeedMessage(msg.uniqueId, 'followed! ❤️', false);
-          }
-          
           if (msg.type === 'like') {
             setRoundLikes(prev => prev + msg.likeCount);
+          }
+          
+          if (msg.type === 'gift') {
+            addFeedMessage(msg.uniqueId, `sent ${msg.repeatCount}x ${msg.giftName} 🎁`, false);
+            
+            const giftName = msg.giftName.toLowerCase();
+            
+            // Massive Reveal (Rose / Mawar)
+            if (giftName.includes('rose') || giftName.includes('mawar')) {
+              setRoseVotes(prev => prev + msg.repeatCount);
+            }
+            
+            // Level Up / Skip (Finger Heart / Jari Hati)
+            if (giftName.includes('finger heart') || giftName.includes('hati')) {
+               setLevelVotes(prev => prev + msg.repeatCount);
+            }
+
+            // Level Down (Overreact)
+            if (giftName.includes('overreact')) {
+               setLevelDownVotes(prev => prev + msg.repeatCount);
+            }
           }
         } catch (e) {
           // ignore
@@ -278,6 +362,76 @@ export default function TikiTakaGame() {
       });
     }
   }, [roundLikes, isCompleted]);
+
+  // Handle Level Up (Finger Heart)
+  const VOTES_NEEDED = 2;
+  useEffect(() => {
+    if (levelVotes >= VOTES_NEEDED) {
+      setLevelVotes(prev => prev - VOTES_NEEDED);
+      const order = ['easy', 'medium', 'hard'];
+      const nextIdx = (order.indexOf(difficulty) + 1) % order.length;
+      const nextDiff = order[nextIdx];
+      setDifficulty(nextDiff);
+      startNewGame(nextDiff);
+      
+      // Level Up Effect
+      confetti({
+        particleCount: 150,
+        spread: 120,
+        origin: { y: 0.4 },
+        colors: ['#3b82f6', '#8b5cf6', '#ffffff'],
+        zIndex: 100
+      });
+    }
+  }, [levelVotes, difficulty, startNewGame]);
+
+  // Handle Level Down (Coffee)
+  useEffect(() => {
+    if (levelDownVotes >= VOTES_NEEDED) {
+      setLevelDownVotes(prev => prev - VOTES_NEEDED);
+      const order = ['easy', 'medium', 'hard'];
+      const prevIdx = (order.indexOf(difficulty) - 1 + order.length) % order.length;
+      const prevDiff = order[prevIdx];
+      setDifficulty(prevDiff);
+      startNewGame(prevDiff);
+      
+      // Level Down Effect
+      confetti({
+        particleCount: 150,
+        spread: 120,
+        origin: { y: 0.4 },
+        colors: ['#ef4444', '#f87171', '#ffffff'],
+        zIndex: 100
+      });
+    }
+  }, [levelDownVotes, difficulty, startNewGame]);
+
+  // Handle Massive Reveal (Rose)
+  const ROSE_NEEDED = 5;
+  useEffect(() => {
+    if (roseVotes >= ROSE_NEEDED && !isCompleted) {
+      setRoseVotes(prev => prev - ROSE_NEEDED);
+      setHints(prev => {
+        const newHints = [...prev];
+        let changed = false;
+        for(let i=0; i<9; i++) {
+          if (cellsRef.current[i] === null) {
+            if (newHints[i] < 1) { newHints[i] = 1; changed = true; }
+            else if (newHints[i] === 1) { newHints[i] = 2; changed = true; }
+          }
+        }
+        return newHints;
+      });
+      // Confetti effect for massive reveal
+      confetti({
+        particleCount: 80,
+        spread: 100,
+        origin: { y: 0.5 },
+        colors: ['#f43f5e', '#fb7185', '#ffffff'],
+        zIndex: 100
+      });
+    }
+  }, [roseVotes, isCompleted]);
 
   // Scroll feed to bottom
   useEffect(() => {
@@ -365,6 +519,13 @@ export default function TikiTakaGame() {
         const latestCells = cellsRef.current;
         if (latestCells[i] !== null) continue;
 
+        // Runtime block: prevent same player from filling multiple cells
+        const normalizedMatchName = match.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        if (usedPlayersRef.current.has(normalizedMatchName)) {
+          continue; // Skip — this player already used in another cell
+        }
+        usedPlayersRef.current.add(normalizedMatchName);
+
         const newCells = [...latestCells];
         newCells[i] = {
           playerName: match.name,
@@ -379,63 +540,82 @@ export default function TikiTakaGame() {
         // Check if game is completed
         const completed = newCells.every(c => c !== null);
         if (completed) {
-          setIsCompleted(true);
-          
-          // Calculate MVP Stats
-          const stats = {};
-          newCells.forEach(c => {
-            const key = c.uniqueId;
-            if (!stats[key]) {
-              stats[key] = {
-                uniqueId: c.uniqueId,
-                nickname: c.nickname,
-                profilePictureUrl: c.profilePictureUrl,
-                score: 0
-              };
-            }
-            stats[key].score += 1;
-          });
-          
-          const sortedMvps = Object.values(stats).sort((a, b) => b.score - a.score);
-          setMvpStats(sortedMvps);
-
-          // Update Global Leaderboard
-          const globalData = loadGlobalLeaderboard();
-          newCells.forEach(c => {
-            const key = c.uniqueId;
-            if (!globalData[key]) {
-              globalData[key] = {
-                uniqueId: c.uniqueId,
-                nickname: c.nickname,
-                profilePictureUrl: c.profilePictureUrl,
-                score: 0
-              };
-            }
-            // Update profile picture and nickname if changed
-            globalData[key].nickname = c.nickname;
-            if (c.profilePictureUrl) globalData[key].profilePictureUrl = c.profilePictureUrl;
-            
-            globalData[key].score += 1;
-          });
-          saveGlobalLeaderboard(globalData);
-          const sortedGlobal = Object.values(globalData).sort((a, b) => b.score - a.score).slice(0, 5);
-          setGlobalStats(sortedGlobal);
-
-          // Single burst confetti for performance
+          // Immediate minimal confetti for the 9th correct answer
           confetti({
-            particleCount: 80,
-            spread: 80,
+            particleCount: 15,
+            spread: 50,
             origin: { y: 0.6 },
-            colors: ['#f59e0b', '#fbbf24', '#ffffff'],
+            colors: ['#10b981', '#ffffff', '#fbbf24'],
+            gravity: 1.5,
+            ticks: 80,
             disableForReducedMotion: true
           });
+
+          // Delay the MVP overlay by 3 seconds
+          setTimeout(() => {
+            setIsCompleted(true);
+            
+            // Calculate MVP Stats
+            const stats = {};
+            newCells.forEach(c => {
+              const key = c.uniqueId;
+              if (!stats[key]) {
+                stats[key] = {
+                  uniqueId: c.uniqueId,
+                  nickname: c.nickname,
+                  profilePictureUrl: c.profilePictureUrl,
+                  score: 0
+                };
+              }
+              stats[key].score += 1;
+            });
+            
+            const sortedMvps = Object.values(stats).sort((a, b) => b.score - a.score);
+            setMvpStats(sortedMvps);
+
+            // Update Global Leaderboard
+            const globalData = loadGlobalLeaderboard();
+            newCells.forEach(c => {
+              const key = c.uniqueId;
+              if (!globalData[key]) {
+                globalData[key] = {
+                  uniqueId: c.uniqueId,
+                  nickname: c.nickname,
+                  profilePictureUrl: c.profilePictureUrl,
+                  score: 0
+                };
+              }
+              // Update profile picture and nickname if changed
+              globalData[key].nickname = c.nickname;
+              if (c.profilePictureUrl) globalData[key].profilePictureUrl = c.profilePictureUrl;
+              
+              globalData[key].score += 1;
+            });
+            saveGlobalLeaderboard(globalData);
+            const sortedGlobal = Object.values(globalData).sort((a, b) => b.score - a.score).slice(0, 5);
+            setGlobalStats(sortedGlobal);
+
+            // Light confetti burst for game completion (low-lag)
+            confetti({
+              particleCount: 40,
+              spread: 80,
+              origin: { y: 0.6 },
+              colors: ['#f59e0b', '#fbbf24', '#ffffff'],
+              gravity: 1.2,
+              ticks: 120,
+              disableForReducedMotion: true
+            });
+          }, 3000);
         } else {
-          // Normal confetti (reduced)
+          // Minimal confetti for correct answer (low-lag)
           confetti({
-            particleCount: 40,
-            spread: 60,
+            particleCount: 12,
+            spread: 45,
             origin: { y: 0.6 },
-            colors: ['#10b981', '#ffffff', '#fbbf24']
+            colors: ['#10b981', '#ffffff', '#fbbf24'],
+            gravity: 1.5,
+            ticks: 80,
+            disableForReducedMotion: true
           });
         }
         
@@ -539,8 +719,8 @@ export default function TikiTakaGame() {
                 <h2>MATCH COMPLETED</h2>
                 <div className="leaderboards-container">
                   <div className={`mvp-list ${countdown > 7 ? 'fade-in' : 'fade-out'}`}>
-                    <h3>🏆 MATCH MVP</h3>
-                    {mvpStats.slice(0, 3).map((mvp, idx) => (
+                    <h3>🏆 MAN OF THE MATCH</h3>
+                    {mvpStats.map((mvp, idx) => (
                       <div key={mvp.uniqueId} className="mvp-row">
                         <div className="mvp-rank">#{idx + 1}</div>
                         {mvp.profilePictureUrl ? (
@@ -585,15 +765,23 @@ export default function TikiTakaGame() {
             </div>
           )}
           
+          {globalStats.length > 0 && (
+            <div className="top-global-badge">
+              <div className="top-global-title">THE GOAT</div>
+              {globalStats[0].profilePictureUrl ? (
+                <img src={globalStats[0].profilePictureUrl} alt="GOAT" className="top-global-avatar" />
+              ) : (
+                <div className="top-global-avatar-placeholder">{globalStats[0].nickname.charAt(0)}</div>
+              )}
+              <div className="top-global-name">{globalStats[0].nickname}</div>
+            </div>
+          )}
+
           <div className="col-headers">
             {gridData.cols.map((col, idx) => (
               <div key={`col-${idx}`} className="header-cell">
-                {col.type === 'position' ? (
-                  <div className="text-logo">{col.textLogo}</div>
-                ) : (
-                  <ClubLogo src={col.logoUrl} name={col.name} className="club-logo" />
-                )}
-                <span className="club-name">{col.name}</span>
+                {renderHeader(col)}
+                {col.type !== 'jersey' && <span className="club-name">{col.name}</span>}
               </div>
             ))}
           </div>
@@ -601,12 +789,8 @@ export default function TikiTakaGame() {
           <div className="row-headers">
             {gridData.rows.map((row, idx) => (
               <div key={`row-${idx}`} className="header-cell">
-                {row.type === 'position' ? (
-                  <div className="text-logo">{row.textLogo}</div>
-                ) : (
-                  <ClubLogo src={row.logoUrl} name={row.name} className="club-logo" />
-                )}
-                <span className="club-name">{row.name}</span>
+                {renderHeader(row)}
+                {row.type !== 'jersey' && <span className="club-name">{row.name}</span>}
               </div>
             ))}
           </div>
@@ -649,13 +833,42 @@ export default function TikiTakaGame() {
           </div>
         </div>
 
-        <div className="like-progress-container">
-          <div className="like-progress-text">❤️ {Math.min(roundLikes, 1000)} / 1000 Tap-Tap for Clue!</div>
-          <div className="like-progress-bar">
-            <div 
-              className="like-progress-fill" 
-              style={{ width: `${Math.min((roundLikes / 1000) * 100, 100)}%` }}
-            ></div>
+        <div className="live-interactions-panel">
+          <div className="interaction-col">
+            <div className="interaction-label">❤️ {Math.min(roundLikes, 1000)} / 1000 Tap-Tap for Clue!</div>
+            <div className="progress-bar">
+              <div className="progress-fill like-fill" style={{ width: `${Math.min((roundLikes / 1000) * 100, 100)}%` }}></div>
+            </div>
+          </div>
+          
+          <div className="interaction-row-bottom">
+            <div className="interaction-col">
+              <div className="interaction-label" style={{ color: '#fb7185' }}>
+                <span className="gift-icon">🌹</span> 
+                {roseVotes} / {ROSE_NEEDED} Reveal
+              </div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ background: 'linear-gradient(90deg, #f43f5e, #fb7185)', boxShadow: '0 0 8px rgba(244, 63, 94, 0.5)', width: `${Math.min((roseVotes / ROSE_NEEDED) * 100, 100)}%` }}></div>
+              </div>
+            </div>
+            <div className="interaction-col finger-heart-col">
+              <div className="interaction-label">
+                <img src="https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a4c4dc437fd3a6632aba149769491f49.png~tplv-obj.webp" alt="Finger Heart" className="gift-img-icon" /> 
+                {levelVotes} / {VOTES_NEEDED} Level Up
+              </div>
+              <div className="progress-bar">
+                <div className="progress-fill level-fill" style={{ width: `${Math.min((levelVotes / VOTES_NEEDED) * 100, 100)}%` }}></div>
+              </div>
+            </div>
+            <div className="interaction-col overreact-col">
+              <div className="interaction-label" style={{color: '#f87171'}}>
+                <img src="https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/dfd48ef1952b6d315856adda7705d02d.png~tplv-obj.webp" alt="Overreact" className="gift-img-icon" /> 
+                {levelDownVotes} / {VOTES_NEEDED} Level Down
+              </div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ background: 'linear-gradient(90deg, #ef4444, #f87171)', boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)', width: `${Math.min((levelDownVotes / VOTES_NEEDED) * 100, 100)}%` }}></div>
+              </div>
+            </div>
           </div>
         </div>
 
