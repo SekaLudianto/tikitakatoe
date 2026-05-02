@@ -28,9 +28,10 @@ show_banner() {
     echo -e "  ${GREEN}║                                              ║${NC}"
     echo -e "  ${GREEN}║${NC}   ${CYAN}[1]${NC}  Install Dependencies                  ${GREEN}║${NC}"
     echo -e "  ${GREEN}║${NC}   ${CYAN}[2]${NC}  Generate Game Data (Scraper)          ${GREEN}║${NC}"
-    echo -e "  ${GREEN}║${NC}   ${CYAN}[3]${NC}  Start Game (Backend + Frontend)       ${GREEN}║${NC}"
-    echo -e "  ${GREEN}║${NC}   ${CYAN}[4]${NC}  Full Setup (Install + Data + Start)   ${GREEN}║${NC}"
-    echo -e "  ${GREEN}║${NC}   ${CYAN}[5]${NC}  Install Termux Requirements           ${GREEN}║${NC}"
+    echo -e "  ${GREEN}║${NC}   ${CYAN}[3]${NC}  Generate Huge Puzzle Grids (7500+)    ${GREEN}║${NC}"
+    echo -e "  ${GREEN}║${NC}   ${CYAN}[4]${NC}  Start Game (Backend + Frontend)       ${GREEN}║${NC}"
+    echo -e "  ${GREEN}║${NC}   ${CYAN}[5]${NC}  Full Setup (Install + Data + Start)   ${GREEN}║${NC}"
+    echo -e "  ${GREEN}║${NC}   ${CYAN}[6]${NC}  Install Termux Requirements           ${GREEN}║${NC}"
     echo -e "  ${GREEN}║${NC}   ${RED}[0]${NC}  Exit                                  ${GREEN}║${NC}"
     echo -e "  ${GREEN}║                                              ║${NC}"
     echo -e "  ${GREEN}╚══════════════════════════════════════════════╝${NC}"
@@ -113,6 +114,25 @@ run_scraper() {
     press_continue
 }
 
+run_huge_scraper() {
+    clear_screen
+    echo ""
+    echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
+    echo -e "  ${WHITE}${BOLD} Generating Huge Puzzle Grids...${NC}"
+    echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
+    echo ""
+    echo -e "  ${DIM}Generating 7500+ grids from DuckDB."
+    echo -e "  This might take a few minutes...${NC}"
+    echo ""
+    cd "$PROJECT_DIR"
+    node scraper/build_from_duckdb.js
+    echo ""
+    echo -e "  ${GREEN}══════════════════════════════════════${NC}"
+    echo -e "  ${GREEN}${BOLD} Huge puzzles generated successfully!${NC}"
+    echo -e "  ${GREEN}══════════════════════════════════════${NC}"
+    press_continue
+}
+
 start_game() {
     clear_screen
     echo ""
@@ -191,15 +211,16 @@ full_setup() {
 while true; do
     clear_screen
     show_banner
-    echo -ne "  ${WHITE}Select option ${CYAN}[0-5]${WHITE}: ${NC}"
+    echo -ne "  ${WHITE}Select option ${CYAN}[0-6]${WHITE}: ${NC}"
     read -r choice
     
     case $choice in
         1) install_deps ;;
         2) run_scraper ;;
-        3) start_game ;;
-        4) full_setup ;;
-        5) install_termux_deps ;;
+        3) run_huge_scraper ;;
+        4) start_game ;;
+        5) full_setup ;;
+        6) install_termux_deps ;;
         0)
             clear_screen
             echo ""

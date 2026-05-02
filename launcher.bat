@@ -15,19 +15,21 @@ echo  ╠═══════════════════════�
 echo  ║                                              ║
 echo  ║   [1]  Install Dependencies                  ║
 echo  ║   [2]  Generate Game Data (Scraper)          ║
-echo  ║   [3]  Start Game (Backend + Frontend)       ║
-echo  ║   [4]  Full Setup (Install + Data + Start)   ║
-echo  ║   [5]  Exit                                  ║
+echo  ║   [3]  Generate Huge Puzzle Grids (7500+)    ║
+echo  ║   [4]  Start Game (Backend + Frontend)       ║
+echo  ║   [5]  Full Setup (Install + Data + Start)   ║
+echo  ║   [6]  Exit                                  ║
 echo  ║                                              ║
 echo  ╚══════════════════════════════════════════════╝
 echo.
-set /p choice="  Select option [1-5]: "
+set /p choice="  Select option [1-6]: "
 
 if "%choice%"=="1" goto INSTALL
 if "%choice%"=="2" goto SCRAPER
-if "%choice%"=="3" goto START
-if "%choice%"=="4" goto FULLSETUP
-if "%choice%"=="5" goto EXIT
+if "%choice%"=="3" goto SCRAPER_HUGE
+if "%choice%"=="4" goto START
+if "%choice%"=="5" goto FULLSETUP
+if "%choice%"=="6" goto EXIT
 echo.
 echo  [!] Invalid option. Please try again.
 timeout /t 2 >nul
@@ -77,6 +79,25 @@ cd ..
 echo.
 echo  ══════════════════════════════════════
 echo   Game data generated successfully!
+echo  ══════════════════════════════════════
+echo.
+pause
+goto MENU
+
+:SCRAPER_HUGE
+cls
+echo.
+echo  ══════════════════════════════════════
+echo   Generating Huge Puzzle Grids...
+echo  ══════════════════════════════════════
+echo.
+echo  This will generate 7500+ grids from DuckDB.
+echo  (May take a few minutes)
+echo.
+call node scraper/build_from_duckdb.js
+echo.
+echo  ══════════════════════════════════════
+echo   Huge puzzles generated successfully!
 echo  ══════════════════════════════════════
 echo.
 pause
