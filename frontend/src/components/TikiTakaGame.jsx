@@ -449,7 +449,10 @@ export default function TikiTakaGame() {
     
     // Normalize: strip accents/diacritics, lowercase, remove hyphens
     const normalize = (str) => 
-      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-']/g, ' ').trim();
+      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/ø/g, 'o').replace(/æ/g, 'ae').replace(/œ/g, 'oe')
+        .replace(/ß/g, 'ss').replace(/đ/g, 'd').replace(/ł/g, 'l')
+        .replace(/[-']/g, ' ').trim();
 
     const searchName = normalize(guess);
     if (searchName.length < 3) return;
@@ -493,12 +496,9 @@ export default function TikiTakaGame() {
           const nameParts = normalizedName.split(' ');
           const lastName = nameParts[nameParts.length - 1];
           
-          return (
-            normalizedName.includes(searchName) ||
-            searchName.includes(normalizedName) ||
-            lastName === searchName ||
-            (searchName.length >= 4 && nameParts.some(part => part === searchName))
-          );
+          const isExactMatch = normalizedName === searchName || lastName === searchName;
+          const isPartMatch = searchName.length >= 4 && nameParts.some(part => part === searchName);
+          return isExactMatch || isPartMatch;
         });
         if (localMatch) {
           match = { name: localMatch.name, imageUrl: localMatch.imageUrl };
