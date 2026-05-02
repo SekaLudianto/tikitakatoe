@@ -29,9 +29,10 @@ show_banner() {
     echo -e "  ${GREEN}║${NC}   ${CYAN}[1]${NC}  Install Dependencies                  ${GREEN}║${NC}"
     echo -e "  ${GREEN}║${NC}   ${CYAN}[2]${NC}  Generate Game Data (Scraper)          ${GREEN}║${NC}"
     echo -e "  ${GREEN}║${NC}   ${CYAN}[3]${NC}  Generate Huge Puzzle Grids (7500+)    ${GREEN}║${NC}"
-    echo -e "  ${GREEN}║${NC}   ${CYAN}[4]${NC}  Start Game (Backend + Frontend)       ${GREEN}║${NC}"
-    echo -e "  ${GREEN}║${NC}   ${CYAN}[5]${NC}  Full Setup (Install + Data + Start)   ${GREEN}║${NC}"
-    echo -e "  ${GREEN}║${NC}   ${CYAN}[6]${NC}  Install Termux Requirements           ${GREEN}║${NC}"
+    echo -e "  ${GREEN}║${NC}   ${CYAN}[4]${NC}  Extract Puzzle Data (from .zip)       ${GREEN}║${NC}"
+    echo -e "  ${GREEN}║${NC}   ${CYAN}[5]${NC}  Start Game (Backend + Frontend)       ${GREEN}║${NC}"
+    echo -e "  ${GREEN}║${NC}   ${CYAN}[6]${NC}  Full Setup (Install + Data + Start)   ${GREEN}║${NC}"
+    echo -e "  ${GREEN}║${NC}   ${CYAN}[7]${NC}  Install Termux Requirements           ${GREEN}║${NC}"
     echo -e "  ${GREEN}║${NC}   ${RED}[0]${NC}  Exit                                  ${GREEN}║${NC}"
     echo -e "  ${GREEN}║                                              ║${NC}"
     echo -e "  ${GREEN}╚══════════════════════════════════════════════╝${NC}"
@@ -208,20 +209,58 @@ full_setup() {
     press_continue
 }
 
+extract_grids() {
+    clear_screen
+    echo ""
+    echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
+    echo -e "  ${WHITE}${BOLD} Extracting Puzzle Data...${NC}"
+    echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
+    echo ""
+    cd "$PROJECT_DIR/data"
+    local found=0
+    for f in grids-easy.zip grids-medium.zip grids-hard.zip; do
+        if [ -f "$f" ]; then
+            echo -e "  ${CYAN}📦${NC} Extracting $f..."
+            unzip -o "$f" 2>/dev/null || python -c "import zipfile; zipfile.ZipFile('$f').extractall('.')" 2>/dev/null
+            found=1
+        fi
+    done
+    if [ $found -eq 0 ]; then
+        echo -e "  ${RED}[!] No .zip files found in data/ folder.${NC}"
+        echo -e "  ${DIM}    Make sure grids-easy.zip, grids-medium.zip,${NC}"
+        echo -e "  ${DIM}    and grids-hard.zip are in the data/ directory.${NC}"
+    else
+        echo ""
+        echo -e "  ${GREEN}══════════════════════════════════════${NC}"
+        echo -e "  ${GREEN}${BOLD} Puzzle data extracted successfully!${NC}"
+        echo -e "  ${GREEN}══════════════════════════════════════${NC}"
+        # Show file sizes
+        for f in grids-easy.json grids-medium.json grids-hard.json; do
+            if [ -f "$f" ]; then
+                local size=$(du -h "$f" | cut -f1)
+                echo -e "  ${GREEN}✓${NC} $f ($size)"
+            fi
+        done
+    fi
+    cd "$PROJECT_DIR"
+    press_continue
+}
+
 # ─── Main Loop ───
 while true; do
     clear_screen
     show_banner
-    echo -ne "  ${WHITE}Select option ${CYAN}[0-6]${WHITE}: ${NC}"
+    echo -ne "  ${WHITE}Select option ${CYAN}[0-7]${WHITE}: ${NC}"
     read -r choice
     
     case $choice in
         1) install_deps ;;
         2) run_scraper ;;
         3) run_huge_scraper ;;
-        4) start_game ;;
-        5) full_setup ;;
-        6) install_termux_deps ;;
+        4) extract_grids ;;
+        5) start_game ;;
+        6) full_setup ;;
+        7) install_termux_deps ;;
         0)
             clear_screen
             echo ""

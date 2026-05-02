@@ -288,19 +288,42 @@ app.get('/api/health', (req, res) => {
 });
 
 // ==================== LOAD GRIDS ====================
-let gridsData = null;
-const gridsPath = path.join(__dirname, 'data', 'sample-grids.json');
-try {
-  console.log('📦 Loading puzzle grids...');
-  const gridsRaw = fs.readFileSync(gridsPath, 'utf-8');
-  gridsData = JSON.parse(gridsRaw);
-  const easyCount = (gridsData.easy || []).length;
-  const medCount = (gridsData.medium || []).length;
-  const hardCount = (gridsData.hard || []).length;
-  console.log(`✅ Grids loaded: Easy=${easyCount}, Medium=${medCount}, Hard=${hardCount}`);
-} catch (err) {
-  console.error('⚠️ Failed to load grids:', err.message);
-  console.error('   Run "node scraper/build_from_duckdb.js" to generate grids');
+let gridsData = { easy: [], medium: [], hard: [] };
+const gridsDir = path.join(__dirname, 'data');
+
+// Try loading per-difficulty files first (much faster, ~50-170MB each vs 523MB combined)
+let loadedSplit = false;
+for (const diff of ['easy', 'medium', 'hard']) {
+  const splitPath = path.join(gridsDir, `grids-${diff}.json`);
+  if (fs.existsSync(splitPath)) {
+    try {
+      console.log(`📦 Loading grids-${diff}.json...`);
+      const raw = fs.readFileSync(splitPath, 'utf-8');
+      gridsData[diff] = JSON.parse(raw);
+      console.log(`   ✅ ${diff}: ${gridsData[diff].length} grids`);
+      loadedSplit = true;
+    } catch (err) {
+      console.error(`   ⚠️ Failed to load grids-${diff}.json:`, err.message);
+    }
+  }
+}
+
+// Fallback: load combined file if split files not found
+if (!loadedSplit) {
+  const combinedPath = path.join(gridsDir, 'sample-grids.json');
+  if (fs.existsSync(combinedPath)) {
+    try {
+      console.log('📦 Loading sample-grids.json (this may take a moment)...');
+      const raw = fs.readFileSync(combinedPath, 'utf-8');
+      gridsData = JSON.parse(raw);
+      console.log(`✅ Grids loaded: Easy=${(gridsData.easy||[]).length}, Medium=${(gridsData.medium||[]).length}, Hard=${(gridsData.hard||[]).length}`);
+    } catch (err) {
+      console.error('⚠️ Failed to load grids:', err.message);
+      console.error('   Run "node scraper/build_from_duckdb.js" to generate grids');
+    }
+  } else {
+    console.error('⚠️ No grid files found. Run menu option [3] to generate grids.');
+  }
 }
 
 // API: Get a random grid by difficulty

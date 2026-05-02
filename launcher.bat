@@ -16,20 +16,22 @@ echo  ║                                              ║
 echo  ║   [1]  Install Dependencies                  ║
 echo  ║   [2]  Generate Game Data (Scraper)          ║
 echo  ║   [3]  Generate Huge Puzzle Grids (7500+)    ║
-echo  ║   [4]  Start Game (Backend + Frontend)       ║
-echo  ║   [5]  Full Setup (Install + Data + Start)   ║
-echo  ║   [6]  Exit                                  ║
+echo  ║   [4]  Extract Puzzle Data (from .zip)       ║
+echo  ║   [5]  Start Game (Backend + Frontend)       ║
+echo  ║   [6]  Full Setup (Install + Data + Start)   ║
+echo  ║   [7]  Exit                                  ║
 echo  ║                                              ║
 echo  ╚══════════════════════════════════════════════╝
 echo.
-set /p choice="  Select option [1-6]: "
+set /p choice="  Select option [1-7]: "
 
 if "%choice%"=="1" goto INSTALL
 if "%choice%"=="2" goto SCRAPER
 if "%choice%"=="3" goto SCRAPER_HUGE
-if "%choice%"=="4" goto START
-if "%choice%"=="5" goto FULLSETUP
-if "%choice%"=="6" goto EXIT
+if "%choice%"=="4" goto EXTRACT
+if "%choice%"=="5" goto START
+if "%choice%"=="6" goto FULLSETUP
+if "%choice%"=="7" goto EXIT
 echo.
 echo  [!] Invalid option. Please try again.
 timeout /t 2 >nul
@@ -100,6 +102,35 @@ cd ..
 echo.
 echo  ══════════════════════════════════════
 echo   Huge puzzles generated successfully!
+echo  ══════════════════════════════════════
+echo.
+pause
+goto MENU
+
+:EXTRACT
+cls
+echo.
+echo  ══════════════════════════════════════
+echo   Extracting Puzzle Data...
+echo  ══════════════════════════════════════
+echo.
+cd data
+if exist grids-easy.zip (
+  echo  Extracting grids-easy.zip...
+  powershell -command "Expand-Archive -Force 'grids-easy.zip' '.'"
+)
+if exist grids-medium.zip (
+  echo  Extracting grids-medium.zip...
+  powershell -command "Expand-Archive -Force 'grids-medium.zip' '.'"
+)
+if exist grids-hard.zip (
+  echo  Extracting grids-hard.zip...
+  powershell -command "Expand-Archive -Force 'grids-hard.zip' '.'"
+)
+cd ..
+echo.
+echo  ══════════════════════════════════════
+echo   Puzzle data extracted successfully!
 echo  ══════════════════════════════════════
 echo.
 pause

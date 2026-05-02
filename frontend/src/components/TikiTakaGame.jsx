@@ -174,7 +174,7 @@ export default function TikiTakaGame() {
 
     const excludeParam = playedHistory.length > 0 ? `&exclude=${playedHistory.join(',')}` : '';
     
-    fetch(`http://localhost:3001/api/grid?difficulty=${targetDiff}${excludeParam}`)
+    fetch(`/api/grid?difficulty=${targetDiff}${excludeParam}`)
       .then(res => res.json())
       .then(data => {
         if (data.grid) {
@@ -212,12 +212,21 @@ export default function TikiTakaGame() {
     return () => clearTimeout(timer);
   }, [isCompleted, countdown, startNewGame]);
 
+  // Load global leaderboard on mount
   useEffect(() => {
     const globalData = loadGlobalLeaderboard();
-    const sortedGlobal = Object.values(globalData).sort((a, b) => b.score - a.score).slice(0, 5); // Limit global to top 5
+    const sortedGlobal = Object.values(globalData).sort((a, b) => b.score - a.score).slice(0, 5);
     setGlobalStats(sortedGlobal);
-    if (gridsData) startNewGame();
-  }, [startNewGame, gridsData]);
+  }, []);
+
+  // Start the first game once on mount
+  const hasStartedRef = useRef(false);
+  useEffect(() => {
+    if (!hasStartedRef.current) {
+      hasStartedRef.current = true;
+      startNewGame();
+    }
+  }, [startNewGame]);
 
   // Fullscreen change listener
   useEffect(() => {
@@ -658,7 +667,18 @@ export default function TikiTakaGame() {
     );
   }
 
-  if (!gridData) return null;
+  if (!gridData) {
+    return (
+      <div className="tikitaka-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="bg-blob blob-1"></div>
+        <div className="bg-blob blob-2"></div>
+        <div style={{ textAlign: 'center', zIndex: 10 }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'pulse 1.5s infinite' }}>⚽</div>
+          <div style={{ color: '#94a3b8', fontSize: '1.2rem', fontWeight: 500 }}>Loading puzzle...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="tikitaka-container">

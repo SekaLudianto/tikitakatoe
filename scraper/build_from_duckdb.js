@@ -789,16 +789,21 @@ async function main() {
   console.log('\n🧪 Generating 2500 puzzle grids per difficulty...\n');
   const sampleGrids = generateSampleGrids(gameDb, 2500);
   
+  // Write per-difficulty files (fast server loading)
+  for (const diff of ['easy', 'medium', 'hard']) {
+    const diffPath = path.join(OUTPUT_DIR, `grids-${diff}.json`);
+    fs.writeFileSync(diffPath, JSON.stringify(sampleGrids[diff] || []));
+    const count = (sampleGrids[diff] || []).length;
+    const sizeMB = (fs.statSync(diffPath).size / (1024 * 1024)).toFixed(1);
+    console.log(`💾 ${diff}: ${count} grids → ${diffPath} (${sizeMB} MB)`);
+  }
+  
+  // Also write combined file for backward compatibility
   const gridsPath = path.join(OUTPUT_DIR, 'sample-grids.json');
-  fs.writeFileSync(gridsPath, JSON.stringify(sampleGrids, null, 2));
-  console.log(`💾 Tersimpan: ${gridsPath}`);
+  fs.writeFileSync(gridsPath, JSON.stringify(sampleGrids));
+  console.log(`💾 Combined: ${gridsPath}`);
   
-  const frontendDataDir = path.join(__dirname, '..', 'frontend', 'src', 'data');
-  if (!fs.existsSync(frontendDataDir)) fs.mkdirSync(frontendDataDir, { recursive: true });
-  fs.copyFileSync(gridsPath, path.join(frontendDataDir, 'sample-grids.json'));
-  console.log(`📋 Disalin ke frontend/src/data/sample-grids.json`);
-  
-  console.log('\n✅ Selesai! Data game terbaru berhasil dibuat dari DuckDB.');
+  console.log('\n✅ Done! Game data generated from DuckDB.');
 }
 
 main().catch(err => {
