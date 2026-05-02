@@ -172,13 +172,9 @@ function validateGuess(guess, header1, header2) {
     const lastName = nameParts[nameParts.length - 1];
 
     const isExactMatch = normalizedName === searchName || lastName === searchName;
-    const isPrefixMatch = searchName.length >= 4 && (
-      nameParts.some(part => part === searchName) ||
-      lastName.startsWith(searchName) ||
-      normalizedName.startsWith(searchName)
-    );
+    const isPartMatch = searchName.length >= 4 && nameParts.some(part => part === searchName);
 
-    if (isExactMatch || isPrefixMatch) {
+    if (isExactMatch || isPartMatch) {
       return {
         id: candidate.id,
         name: candidate.name,
@@ -200,13 +196,9 @@ function searchPlayersDirectly(searchName, header1, header2) {
     const lastName = nameParts[nameParts.length - 1];
 
     const isExactMatch = normalizedName === searchName || lastName === searchName;
-    const isPrefixMatch = searchName.length >= 4 && (
-      nameParts.some(part => part === searchName) ||
-      lastName.startsWith(searchName) ||
-      normalizedName.startsWith(searchName)
-    );
+    const isPartMatch = searchName.length >= 4 && nameParts.some(part => part === searchName);
 
-    const nameMatch = isExactMatch || isPrefixMatch;
+    const nameMatch = isExactMatch || isPartMatch;
 
     if (!nameMatch) continue;
 
