@@ -283,6 +283,60 @@ app.get('/api/health', (req, res) => {
     players: db.players.length,
     intersections: Object.keys(db.intersections).length,
     tiktokConnected,
+    gridsLoaded: !!gridsData,
+  });
+});
+
+// ==================== LOAD GRIDS ====================
+let gridsData = null;
+const gridsPath = path.join(__dirname, 'data', 'sample-grids.json');
+try {
+  console.log('📦 Loading puzzle grids...');
+  const gridsRaw = fs.readFileSync(gridsPath, 'utf-8');
+  gridsData = JSON.parse(gridsRaw);
+  const easyCount = (gridsData.easy || []).length;
+  const medCount = (gridsData.medium || []).length;
+  const hardCount = (gridsData.hard || []).length;
+  console.log(`✅ Grids loaded: Easy=${easyCount}, Medium=${medCount}, Hard=${hardCount}`);
+} catch (err) {
+  console.error('⚠️ Failed to load grids:', err.message);
+  console.error('   Run "node scraper/build_from_duckdb.js" to generate grids');
+}
+
+// API: Get a random grid by difficulty
+app.get('/api/grid', (req, res) => {
+  if (!gridsData) {
+    return res.status(503).json({ error: 'Grids not loaded' });
+  }
+  const diff = req.query.difficulty || 'medium';
+  const exclude = req.query.exclude ? req.query.exclude.split(',').map(Number) : [];
+  const pool = gridsData[diff] || gridsData.medium || [];
+  if (pool.length === 0) {
+    return res.status(404).json({ error: `No grids for difficulty: ${diff}` });
+  }
+
+  let availableIndices = [];
+  for (let i = 0; i < pool.length; i++) {
+    if (!exclude.includes(i)) availableIndices.push(i);
+  }
+  // Reset if all played
+  if (availableIndices.length === 0) {
+    availableIndices = Array.from({ length: pool.length }, (_, i) => i);
+  }
+
+  const idx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+  res.json({ grid: pool[idx], index: idx, total: pool.length });
+});
+
+// API: Get grid counts
+app.get('/api/grid-counts', (req, res) => {
+  if (!gridsData) {
+    return res.status(503).json({ error: 'Grids not loaded' });
+  }
+  res.json({
+    easy: (gridsData.easy || []).length,
+    medium: (gridsData.medium || []).length,
+    hard: (gridsData.hard || []).length,
   });
 });
 

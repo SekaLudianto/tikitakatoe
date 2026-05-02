@@ -151,33 +151,19 @@ export default function TikiTakaGame() {
   const cellsRef = useRef(cells);
   const usedPlayersRef = useRef(new Set()); // Track used player names to prevent same player filling multiple cells
 
-  // Keep cellsRef in sync
+  // Keep refs in sync
   useEffect(() => { cellsRef.current = cells; }, [cells]);
   useEffect(() => { gridRef.current = gridData; }, [gridData]);
 
-  // Lazy-load sample-grids.json on mount (34MB file, not bundled)
+  // No longer loading the massive JSON file in browser.
+  // Grids are served one-at-a-time via backend API.
   useEffect(() => {
-    let cancelled = false;
-    setGridsLoading(true);
-    fetch('/sample-grids.json')
-      .then(res => res.json())
-      .then(data => {
-        if (!cancelled) {
-          setGridsData(data);
-          setGridsLoading(false);
-        }
-      })
-      .catch(err => {
-        console.error('Failed to load grids data:', err);
-        if (!cancelled) setGridsLoading(false);
-      });
-    return () => { cancelled = true; };
+    setGridsLoading(false);
+    setGridsData(true); // flag: data available via API
   }, []);
 
   // Initialize a random grid without repeating until all are played
   const startNewGame = useCallback((overrideDiff) => {
-    if (!gridsData) return;
-    
     const targetDiff = overrideDiff || difficulty;
 
     let playedHistory = [];
@@ -186,38 +172,34 @@ export default function TikiTakaGame() {
       if (historyStr) playedHistory = JSON.parse(historyStr);
     } catch (e) {}
 
-    const availableGrids = gridsData[targetDiff] || gridsData.medium;
+    const excludeParam = playedHistory.length > 0 ? `&exclude=${playedHistory.join(',')}` : '';
+    
+    fetch(`http://localhost:3001/api/grid?difficulty=${targetDiff}${excludeParam}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.grid) {
+          // Track played grids
+          playedHistory.push(data.index);
+          // Reset history if we've played all
+          if (playedHistory.length >= data.total) playedHistory = [];
+          try {
+            localStorage.setItem(`tikitaka_played_grids_${targetDiff}`, JSON.stringify(playedHistory));
+          } catch (e) {}
 
-    let availableIndices = [];
-    for (let i = 0; i < availableGrids.length; i++) {
-      if (!playedHistory.includes(i)) {
-        availableIndices.push(i);
-      }
-    }
-
-    // Reset jika semua soal sudah pernah keluar
-    if (availableIndices.length === 0) {
-      availableIndices = Array.from({ length: availableGrids.length }, (_, i) => i);
-      playedHistory = [];
-    }
-
-    const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-    const chosenGrid = availableGrids[randomIndex];
-
-    playedHistory.push(randomIndex);
-    try {
-      localStorage.setItem(`tikitaka_played_grids_${targetDiff}`, JSON.stringify(playedHistory));
-    } catch (e) {}
-
-    setGridData(chosenGrid);
-    setCells(Array(9).fill(null));
-    setHints(Array(9).fill(0));
-    setIsCompleted(false);
-    setCountdown(15);
-    setMvpStats([]);
-    setRoundLikes(0);
-    usedPlayersRef.current = new Set(); // Reset used players for new game
-  }, [difficulty, gridsData]);
+          setGridData(data.grid);
+          setCells(Array(9).fill(null));
+          setHints(Array(9).fill(0));
+          setIsCompleted(false);
+          setCountdown(15);
+          setMvpStats([]);
+          setRoundLikes(0);
+          usedPlayersRef.current = new Set();
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load grid:', err);
+      });
+  }, [difficulty]);
 
   // Automatic countdown for next game
   useEffect(() => {

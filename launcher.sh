@@ -124,8 +124,9 @@ run_huge_scraper() {
     echo -e "  ${DIM}Generating 7500+ grids from DuckDB."
     echo -e "  This might take a few minutes...${NC}"
     echo ""
+    cd "$PROJECT_DIR/scraper"
+    node build_from_duckdb.js
     cd "$PROJECT_DIR"
-    node scraper/build_from_duckdb.js
     echo ""
     echo -e "  ${GREEN}══════════════════════════════════════${NC}"
     echo -e "  ${GREEN}${BOLD} Huge puzzles generated successfully!${NC}"

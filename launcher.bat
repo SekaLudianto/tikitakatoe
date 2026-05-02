@@ -94,7 +94,9 @@ echo.
 echo  This will generate 7500+ grids from DuckDB.
 echo  (May take a few minutes)
 echo.
-call node scraper/build_from_duckdb.js
+cd scraper
+call node build_from_duckdb.js
+cd ..
 echo.
 echo  ══════════════════════════════════════
 echo   Huge puzzles generated successfully!
