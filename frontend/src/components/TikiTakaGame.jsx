@@ -150,6 +150,7 @@ export default function TikiTakaGame() {
   const gridRef = useRef(null);
   const cellsRef = useRef(cells);
   const usedPlayersRef = useRef(new Set()); // Track used player names to prevent same player filling multiple cells
+  const processedGiftsRef = useRef(new Set()); // Dedup gifts from multiple WS connections
 
   // Keep refs in sync
   useEffect(() => { cellsRef.current = cells; }, [cells]);
@@ -286,21 +287,28 @@ export default function TikiTakaGame() {
           }
           
           if (msg.type === 'gift') {
+            // Deduplicate gifts (React Strict Mode creates 2 WS connections in dev)
+            const giftKey = `${msg.uniqueId}_${msg.giftName}_${msg.timestamp}`;
+            if (processedGiftsRef.current.has(giftKey)) return;
+            processedGiftsRef.current.add(giftKey);
+            // Keep set small: remove old entries after 5 seconds
+            setTimeout(() => processedGiftsRef.current.delete(giftKey), 5000);
+
             addFeedMessage(msg.uniqueId, `sent ${msg.repeatCount}x ${msg.giftName} 🎁`, false);
             
             const giftName = msg.giftName.toLowerCase();
             
-            // Massive Reveal (Rose / Mawar)
+            // Massive Reveal (Rose / Mawar) — 1 coin each, target 5
             if (giftName.includes('rose') || giftName.includes('mawar')) {
               setRoseVotes(prev => prev + msg.repeatCount);
             }
             
-            // Level Up / Skip (Finger Heart / Jari Hati)
+            // Level Up / Skip (Finger Heart) — 5 coins each, target 2
             if (giftName.includes('finger heart') || giftName.includes('hati')) {
                setLevelVotes(prev => prev + msg.repeatCount);
             }
 
-            // Level Down (Overreact)
+            // Level Down (Overreact) — 5 coins each, target 2
             if (giftName.includes('overreact')) {
                setLevelDownVotes(prev => prev + msg.repeatCount);
             }
