@@ -276,6 +276,7 @@ export default function WhoAmIGame() {
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const processedGuessesRef = useRef(new Set());
+  const gameWonRef = useRef(false); // Synchronous lock to prevent race conditions
   
   // Use ref for handleGuess so WebSocket always calls the latest version
   const handleGuessRef = useRef(null);
@@ -308,6 +309,7 @@ export default function WhoAmIGame() {
           setTargetPlayer(player);
           setGuesses([]);
           setGameWon(false);
+          gameWonRef.current = false; // Reset synchronous lock
           setSessionLikes(0);
           setRevealedIndices([]);
           processedGuessesRef.current.clear();
@@ -367,8 +369,9 @@ export default function WhoAmIGame() {
 
   // Handle a guess — this function is kept up-to-date via handleGuessRef
   const handleGuess = useCallback(async (guessName, userInfo) => {
-    if (!targetPlayer || gameWon) {
-      console.log('⚠️ handleGuess skipped: targetPlayer=', !!targetPlayer, 'gameWon=', gameWon);
+    // Use ref (synchronous) instead of state (async) to prevent race conditions
+    // when multiple chat messages arrive simultaneously
+    if (!targetPlayer || gameWonRef.current) {
       return;
     }
     
@@ -419,6 +422,8 @@ export default function WhoAmIGame() {
     setGuesses(prev => [guessEntry, ...prev]);
     
     if (isCorrect) {
+      // Lock immediately (synchronous) to block any concurrent guesses
+      gameWonRef.current = true;
       setGameWon(true);
       setLeaderboard(prev => {
         const currentScore = prev[userInfo.uniqueId]?.score || 0;
@@ -455,7 +460,7 @@ export default function WhoAmIGame() {
         }, 5000); // Show overlay for 5 seconds
       }, 7000); // Wait 7s before showing
     }
-  }, [targetPlayer, gameWon, startNewGame]);
+  }, [targetPlayer, startNewGame]);
 
   // Keep handleGuessRef always pointing to latest handleGuess
   useEffect(() => {
