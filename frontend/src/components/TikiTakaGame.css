@@ -1025,3 +1025,17 @@
   white-space: nowrap;
   letter-spacing: 0.5px;
 }
+
+@media (max-width: 480px) {
+  .interaction-row-bottom {
+    gap: 0.25rem;
+  }
+  .interaction-label {
+    font-size: 0.6rem;
+    white-space: nowrap;
+    gap: 0.15rem;
+  }
+  .interaction-instant {
+    font-size: 0.65rem;
+  }
+}

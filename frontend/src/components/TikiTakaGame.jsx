@@ -934,7 +934,7 @@ export default function TikiTakaGame() {
             <div className="interaction-col finger-heart-col">
               <div className="interaction-label">
                 <SilverBall />
-                {levelVotes} / {LEVEL_UP_NEEDED} Level Up
+                {levelVotes} / {LEVEL_UP_NEEDED} LVL UP
               </div>
               <div className="progress-bar">
                 <div className="progress-fill level-fill" style={{ width: `${Math.min((levelVotes / LEVEL_UP_NEEDED) * 100, 100)}%` }}></div>
@@ -943,7 +943,7 @@ export default function TikiTakaGame() {
             <div className="interaction-col overreact-col">
               <div className="interaction-label" style={{color: '#fbbf24'}}>
                 <GoldBall />
-                {levelDownVotes} / {LEVEL_DOWN_NEEDED} Level Down
+                {levelDownVotes} / {LEVEL_DOWN_NEEDED} LVL DOWN
               </div>
               <div className="progress-bar">
                 <div className="progress-fill" style={{ background: 'linear-gradient(90deg, #ef4444, #f87171)', boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)', width: `${Math.min((levelDownVotes / LEVEL_DOWN_NEEDED) * 100, 100)}%` }}></div>
