@@ -76,7 +76,7 @@ function normalize(str) {
 try {
   const raw = fs.readFileSync(dbPath, 'utf-8');
   db = JSON.parse(raw);
-  
+
   // Build a search index: normalized name parts -> player objects
   // This allows fast lookup by last name, full name, partial match
   for (const player of db.players) {
@@ -85,7 +85,7 @@ try {
       playerIndex[normalizedName] = [];
     }
     playerIndex[normalizedName].push(player);
-    
+
     // Also index by last name for quick lookup
     const parts = normalizedName.split(' ');
     if (parts.length > 1) {
@@ -96,7 +96,7 @@ try {
       playerIndex[lastName].push(player);
     }
   }
-  
+
   console.log(`✅ Database loaded: ${db.players.length} players, ${Object.keys(db.intersections).length} club intersections`);
   console.log(`   Competitions: ${Object.keys(db.competitionIntersections || {}).length}, Jerseys: ${Object.keys(db.jerseyIntersections || {}).length}, Height: ${Object.keys(db.heightIntersections || {}).length}`);
 } catch (err) {
@@ -271,8 +271,8 @@ app.post('/api/validate', (req, res) => {
 
 // API: Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     players: db.players.length,
     intersections: Object.keys(db.intersections).length,
     tiktokConnected,
@@ -309,7 +309,7 @@ if (!loadedSplit) {
       console.log('📦 Loading sample-grids.json (this may take a moment)...');
       const raw = fs.readFileSync(combinedPath, 'utf-8');
       gridsData = JSON.parse(raw);
-      console.log(`✅ Grids loaded: Easy=${(gridsData.easy||[]).length}, Medium=${(gridsData.medium||[]).length}, Hard=${(gridsData.hard||[]).length}`);
+      console.log(`✅ Grids loaded: Easy=${(gridsData.easy || []).length}, Medium=${(gridsData.medium || []).length}, Hard=${(gridsData.hard || []).length}`);
     } catch (err) {
       console.error('⚠️ Failed to load grids:', err.message);
       console.error('   Run "node scraper/build_from_duckdb.js" to generate grids');
@@ -356,27 +356,142 @@ app.get('/api/grid-counts', (req, res) => {
   });
 });
 
-// Big Five European league codes for Who Am I target selection (2025/2026 season)
-const WHOAMI_TARGET_LEAGUES = new Set([
-  'GB1', // Premier League
-  'ES1', // La Liga
-  'IT1', // Serie A
-  'L1',  // Bundesliga
-  'FR1', // Ligue 1
+// Hardcoded Big Five European league club IDs for Who Am I target selection (2025/2026 season)
+// Using exact Transfermarkt club IDs instead of league codes to avoid stale data from relegated clubs.
+// NOTE: Update this list once per season after promotion/relegation is finalized.
+const WHOAMI_VALID_CLUB_IDS = new Set([
+  // === Premier League (GB1) - 20 clubs ===
+  11,    // Arsenal
+  405,   // Aston Villa
+  989,   // AFC Bournemouth
+  1148,  // Brentford
+  1237,  // Brighton & Hove Albion
+  1132,  // Burnley
+  631,   // Chelsea
+  873,   // Crystal Palace
+  29,    // Everton
+  931,   // Fulham
+  399,   // Leeds United
+  31,    // Liverpool
+  281,   // Manchester City
+  985,   // Manchester United
+  762,   // Newcastle United
+  703,   // Nottingham Forest
+  289,   // Sunderland
+  148,   // Tottenham Hotspur
+  379,   // West Ham United
+  543,   // Wolverhampton Wanderers
+
+  // === La Liga (ES1) - 20 clubs ===
+  1108,  // Deportivo Alavés
+  621,   // Athletic Club Bilbao
+  13,    // Atlético de Madrid
+  131,   // FC Barcelona
+  940,   // Celta de Vigo
+  1531,  // Elche CF
+  714,   // RCD Espanyol
+  3709,  // Getafe CF
+  12321, // Girona FC
+  3368,  // Levante UD
+  237,   // RCD Mallorca
+  331,   // CA Osasuna
+  367,   // Rayo Vallecano
+  150,   // Real Betis
+  418,   // Real Madrid
+  2497,  // Real Oviedo
+  681,   // Real Sociedad
+  368,   // Sevilla FC
+  1049,  // Valencia CF
+  1050,  // Villarreal CF
+
+  // === Serie A (IT1) - 20 clubs ===
+  800,   // Atalanta
+  1025,  // Bologna
+  1390,  // Cagliari
+  1047,  // Como
+  2239,  // Cremonese
+  430,   // Fiorentina
+  252,   // Genoa
+  276,   // Hellas Verona
+  46,    // Inter Milan
+  506,   // Juventus
+  398,   // Lazio
+  1005,  // Lecce
+  5,     // AC Milan
+  6195,  // Napoli
+  130,   // Parma
+  4172,  // Pisa
+  12,    // AS Roma
+  6574,  // Sassuolo
+  416,   // Torino
+  410,   // Udinese
+
+  // === Bundesliga (L1) - 18 clubs ===
+  167,   // FC Augsburg
+  15,    // Bayer Leverkusen
+  27,    // Bayern München
+  16,    // Borussia Dortmund
+  18,    // Borussia Mönchengladbach
+  24,    // Eintracht Frankfurt
+  60,    // SC Freiburg
+  41,    // Hamburger SV
+  2036,  // 1. FC Heidenheim
+  533,   // TSG Hoffenheim
+  3,     // 1. FC Köln
+  23826, // RB Leipzig
+  39,    // 1. FSV Mainz 05
+  35,    // FC St. Pauli
+  79,    // VfB Stuttgart
+  89,    // 1. FC Union Berlin
+  86,    // Werder Bremen
+  82,    // VfL Wolfsburg
+
+  // === Ligue 1 (FR1) - 18 clubs ===
+  1420,  // Angers SCO
+  290,   // AJ Auxerre
+  3911,  // Stade Brestois 29
+  738,   // Le Havre AC
+  826,   // RC Lens
+  1082,  // LOSC Lille
+  1158,  // FC Lorient
+  1041,  // Olympique Lyonnais
+  244,   // Olympique de Marseille
+  347,   // FC Metz
+  162,   // AS Monaco
+  995,   // FC Nantes
+  417,   // OGC Nice
+  10004, // Paris FC
+  583,   // Paris Saint-Germain
+  273,   // Stade Rennais
+  667,   // RC Strasbourg Alsace
+  415,   // Toulouse FC
 ]);
 
-// Pre-filter eligible players for Who Am I (active, Big 5 league, has data)
+// Maximum number of top players for Who Am I pool (adjust as needed: 250, 500, etc.)
+const WHOAMI_POOL_SIZE = 250;
+const WHOAMI_MAX_AGE = 40; // Exclude clearly retired players still in DB
+
+// Pre-filter eligible players for Who Am I, then rank by market value (highest ever)
 let whoamiEligiblePlayers = [];
 if (db && db.players) {
-  whoamiEligiblePlayers = db.players.filter(p => 
-    p.currentClub && 
-    p.currentClub.league && 
-    WHOAMI_TARGET_LEAGUES.has(p.currentClub.league) &&
-    p.age && p.age > 0 &&
+  const candidates = db.players.filter(p =>
+    p.currentClub &&
+    p.currentClub.id &&
+    WHOAMI_VALID_CLUB_IDS.has(p.currentClub.id) &&
+    p.marketValue && p.marketValue > 0 &&
+    p.age && p.age > 0 && p.age <= WHOAMI_MAX_AGE &&
     p.shirtNumber && p.shirtNumber > 0 &&
     p.detailedPosition
   );
-  console.log(`🕵️ Who Am I eligible players: ${whoamiEligiblePlayers.length} (Big 5 EU leagues, active, with full data)`);
+
+  // Sort by market value descending, take top N
+  candidates.sort((a, b) => b.marketValue - a.marketValue);
+  whoamiEligiblePlayers = candidates.slice(0, WHOAMI_POOL_SIZE);
+
+  const minValue = whoamiEligiblePlayers.length > 0
+    ? `€${(whoamiEligiblePlayers[whoamiEligiblePlayers.length - 1].marketValue / 1e6).toFixed(0)}M`
+    : 'N/A';
+  console.log(`🕵️ Who Am I pool: top ${whoamiEligiblePlayers.length}/${candidates.length} players (min value: ${minValue})`);
 }
 
 // API: Get random player for Who Am I
@@ -395,18 +510,18 @@ app.get('/api/whoami/search', (req, res) => {
   }
   const searchName = normalize(req.query.q || '');
   if (searchName.length < 3) return res.json({ player: null });
-  
+
   // Find matching player
   const matchedPlayer = db.players.find(p => {
     const normalizedName = normalize(p.name);
     const nameParts = normalizedName.split(' ');
     const lastName = nameParts[nameParts.length - 1];
-    
-    return normalizedName === searchName || 
-           lastName === searchName ||
-           (searchName.length >= 4 && nameParts.some(part => part === searchName));
+
+    return normalizedName === searchName ||
+      lastName === searchName ||
+      (searchName.length >= 4 && nameParts.some(part => part === searchName));
   });
-  
+
   res.json({ player: matchedPlayer || null });
 });
 
@@ -435,13 +550,13 @@ wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     try {
       const msg = JSON.parse(data.toString());
-      
+
       // Handle commands from frontend
       if (msg.type === 'newgrid') {
         console.log('🎮 Frontend requested new grid');
         broadcast({ type: 'newgrid_ack' });
       }
-      
+
       // Allow injecting test chat messages (for testing without TikTok Live)
       if (msg.type === 'inject_chat') {
         console.log(`🧪 Injected chat: "${msg.comment}" from @${msg.user?.uniqueId || 'unknown'}`);
@@ -497,7 +612,7 @@ function getReconnectDelay() {
 function connectToTikTok() {
   // Clean up previous connection if any
   if (tiktokLive) {
-    try { tiktokLive.disconnect(); } catch (e) {}
+    try { tiktokLive.disconnect(); } catch (e) { }
   }
 
   tiktokLive = new WebcastPushConnection(username, {
@@ -619,7 +734,7 @@ function connectToTikTok() {
 
   // Attempt connection
   console.log(`🔄 Connecting to @${username}'s LIVE...`);
-  
+
   tiktokLive.connect()
     .then((state) => {
       tiktokConnected = true;
@@ -641,7 +756,7 @@ function connectToTikTok() {
     .catch((err) => {
       console.error(`❌ Failed to connect: ${err.message}`);
       tiktokConnected = false;
-      
+
       broadcast({
         type: 'status',
         connected: false,
@@ -656,7 +771,7 @@ function scheduleReconnect() {
   const delay = getReconnectDelay();
   reconnectAttempts++;
   console.log(`🔄 Auto-reconnecting in ${delay / 1000}s... (attempt #${reconnectAttempts})`);
-  
+
   broadcast({
     type: 'reconnecting',
     delay: delay,
@@ -678,7 +793,7 @@ let indofinityReconnectTimer = null;
 
 function connectToIndoFinity() {
   if (indofinityWs) {
-    try { indofinityWs.close(); } catch (e) {}
+    try { indofinityWs.close(); } catch (e) { }
   }
 
   console.log(`🔄 Connecting to IndoFinity at ${INDOFINITY_URL}...`);
