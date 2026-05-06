@@ -1,5 +1,10 @@
 /**
- * Enrich tiki-taka-toe-db.json with current club data from DuckDB players table.
+ * Enrich tiki-taka-toe-db.json with current club data from DuckDB.
+ * 
+ * Uses player_valuations table (most recent entry per player) as the PRIMARY
+ * source — this is more accurate than the players table which can be stale.
+ * Falls back to the players table only if no valuation entry exists.
+ * 
  * This adds `currentClub` field to each player so Who Am I mode shows up-to-date info.
  */
 const duckdb = require('duckdb');
@@ -18,42 +23,75 @@ async function main() {
   const db = new duckdb.Database(DB_PATH);
   const conn = db.connect();
 
-  // Query current club for all players
-  const playerIds = gameDb.players.map(p => p.id);
+  const query = (sql) => new Promise((resolve, reject) => {
+    conn.all(sql, (err, res) => err ? reject(err) : resolve(res));
+  });
+
+  // =========================================================
+  // PRIMARY: Use latest player_valuations entry for each player
+  // This has timestamped club data → most accurate and recent
+  // =========================================================
+  console.log('⏳ Querying latest club data from player_valuations...');
   
-  console.log('⏳ Querying current club data...');
-  
-  // Process in batches
   const currentClubs = {};
+  const valuationRows = await query(`
+    SELECT pv.player_id, pv.current_club_name, pv.current_club_id, 
+           pv.player_club_domestic_competition_id, pv.date
+    FROM player_valuations pv
+    INNER JOIN (
+      SELECT player_id, MAX(date) as max_date
+      FROM player_valuations
+      GROUP BY player_id
+    ) latest ON pv.player_id = latest.player_id AND pv.date = latest.max_date
+  `);
+
+  for (const row of valuationRows) {
+    if (row.current_club_name && row.current_club_id) {
+      currentClubs[row.player_id] = {
+        id: parseInt(row.current_club_id),
+        name: row.current_club_name,
+        league: row.player_club_domestic_competition_id || '',
+      };
+    }
+  }
+
+  console.log(`✅ Found club data from valuations for ${Object.keys(currentClubs).length} players`);
+
+  // =========================================================
+  // FALLBACK: Use players table for any players not in valuations
+  // =========================================================
+  const playerIds = gameDb.players.map(p => p.id);
+  const missingIds = playerIds.filter(id => !currentClubs[id]);
+  console.log(`⏳ Querying fallback club data for ${missingIds.length} remaining players...`);
+
   const batchSize = 1000;
-  
-  for (let i = 0; i < playerIds.length; i += batchSize) {
-    const batch = playerIds.slice(i, i + batchSize);
+  let fallbackCount = 0;
+
+  for (let i = 0; i < missingIds.length; i += batchSize) {
+    const batch = missingIds.slice(i, i + batchSize);
     const sql = `
-      SELECT player_id, name, current_club_name, current_club_id, current_club_domestic_competition_id
+      SELECT player_id, current_club_name, current_club_id, current_club_domestic_competition_id
       FROM players 
       WHERE player_id IN (${batch.join(',')})
     `;
-    
-    const rows = await new Promise((resolve, reject) => {
-      conn.all(sql, (err, res) => err ? reject(err) : resolve(res));
-    });
-    
+
+    const rows = await query(sql);
+
     for (const row of rows) {
-      if (row.current_club_name && row.current_club_id) {
+      if (row.current_club_name && row.current_club_id && !currentClubs[row.player_id]) {
         currentClubs[row.player_id] = {
           id: parseInt(row.current_club_id),
           name: row.current_club_name,
           league: row.current_club_domestic_competition_id || ''
         };
+        fallbackCount++;
       }
     }
-    
-    process.stdout.write(`\r   Processed ${Math.min(i + batchSize, playerIds.length)}/${playerIds.length} players`);
   }
-  
-  console.log(`\n✅ Found current club data for ${Object.keys(currentClubs).length} players`);
-  
+
+  console.log(`✅ Added ${fallbackCount} players from fallback (players table)`);
+  console.log(`✅ Total: ${Object.keys(currentClubs).length} players with currentClub`);
+
   // Enrich game database
   let updated = 0;
   for (const player of gameDb.players) {
@@ -63,23 +101,21 @@ async function main() {
       updated++;
     }
   }
-  
+
   console.log(`✅ Updated ${updated} players with currentClub`);
-  
+
   // Save
   fs.writeFileSync(JSON_PATH, JSON.stringify(gameDb, null, 2));
   console.log(`💾 Saved: ${JSON_PATH}`);
-  
-  // Show some examples
-  const cr7 = gameDb.players.find(p => p.name === 'Cristiano Ronaldo');
-  const messi = gameDb.players.find(p => p.name === 'Lionel Messi');
-  const mbappe = gameDb.players.find(p => p.name.includes('Mbappé'));
-  
+
+  // Show examples — verify accuracy
   console.log('\n📋 Examples:');
-  if (cr7) console.log(`   Ronaldo: ${cr7.currentClub?.name} (${cr7.currentClub?.league})`);
-  if (messi) console.log(`   Messi: ${messi.currentClub?.name} (${messi.currentClub?.league})`);
-  if (mbappe) console.log(`   Mbappé: ${mbappe.currentClub?.name} (${mbappe.currentClub?.league})`);
-  
+  const examples = ['Cristiano Ronaldo', 'Lionel Messi', 'Diego Costa', 'Naby Keïta'];
+  for (const name of examples) {
+    const p = gameDb.players.find(pl => pl.name === name);
+    if (p) console.log(`   ${p.name}: ${p.currentClub?.name} (${p.currentClub?.league})`);
+  }
+
   db.close();
   console.log('\n✅ Done!');
 }
