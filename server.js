@@ -526,11 +526,10 @@ app.get('/api/whoami/target', (req, res) => {
 });
 
 // API: Search player by name for Who Am I
-// Accepts optional targetId to prioritize matching the current target player
-// (avoids picking the wrong "Koke" when there are multiple players with the same name)
+// Only searches within the eligible pool (top 250 players)
 app.get('/api/whoami/search', (req, res) => {
-  if (!db || !db.players) {
-    return res.status(503).json({ error: 'Database not loaded' });
+  if (whoamiEligiblePlayers.length === 0) {
+    return res.status(503).json({ error: 'No eligible players' });
   }
   const searchName = normalize(req.query.q || '');
   if (searchName.length < 3) return res.json({ player: null });
@@ -549,14 +548,14 @@ app.get('/api/whoami/search', (req, res) => {
 
   // Priority 1: If targetId is provided, check if the guess matches the target player
   if (targetId) {
-    const targetPlayer = db.players.find(p => p.id === targetId);
+    const targetPlayer = whoamiEligiblePlayers.find(p => p.id === targetId);
     if (targetPlayer && nameMatches(targetPlayer)) {
       return res.json({ player: targetPlayer });
     }
   }
 
-  // Priority 2: General search through all players
-  const matchedPlayer = db.players.find(nameMatches);
+  // Priority 2: Search within eligible pool only
+  const matchedPlayer = whoamiEligiblePlayers.find(nameMatches);
   res.json({ player: matchedPlayer || null });
 });
 
