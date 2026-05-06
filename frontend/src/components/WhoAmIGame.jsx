@@ -572,6 +572,8 @@ export default function WhoAmIGame() {
     'NL1': 'nl1', 'PO1': 'po1', 'TR1': 'tr1', 'MLS1': 'mls1', 'SA1': 'sa1',
     'JAP1': 'jap1', 'BRA1': 'bra1', 'ARG1': 'arg1', 'MEX1': 'mex1',
     'AUS1': 'aus1', 'RSK1': 'rsk1', 'CL': 'cl', 'EL': 'el',
+    'SC1': 'sc1', 'BE1': 'be1', 'GR1': 'gr1', 'RU1': 'ru1', 'UKR1': 'ukr1',
+    'GB2': 'gb2', 'ES2': 'es2', 'IT2': 'it2', 'L2': 'l2', 'FR2': 'fr2',
   };
 
   // Render a single comparison box (compact, minimalist)
@@ -583,7 +585,7 @@ export default function WhoAmIGame() {
     let imgSrc = null;
     if (category.key === 'country') {
       const code = COUNTRY_FLAG_CODES[result.value];
-      if (code) imgSrc = `/flags/${code}.png`;
+      if (code) imgSrc = `https://flagcdn.com/w80/${code}.png`;
     } else if (category.key === 'league' && result.leagueCode) {
       const logo = LEAGUE_LOGO_MAP[result.leagueCode];
       if (logo) imgSrc = `/logos/competitions/${logo}.png`;
@@ -808,7 +810,7 @@ export default function WhoAmIGame() {
                   </div>
                   {/* Hint 1: Nation (1k likes) */}
                   <div style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', display: 'flex', alignItems: 'center' }}>
-                    {sessionLikes >= 1000 ? <img src={`/flags/${COUNTRY_FLAG_CODES[targetPlayer?.country]}.png`} style={{ width: '16px', height: '11px', objectFit: 'contain' }} alt="NAT" /> : '🔒 1k'}
+                    {sessionLikes >= 1000 ? <img src={`https://flagcdn.com/w40/${COUNTRY_FLAG_CODES[targetPlayer?.country]}.png`} style={{ width: '16px', height: '11px', objectFit: 'contain' }} alt="NAT" /> : '🔒 1k'}
                   </div>
                   {/* Hint 2: League (3k likes) */}
                   <div style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', display: 'flex', alignItems: 'center' }}>
