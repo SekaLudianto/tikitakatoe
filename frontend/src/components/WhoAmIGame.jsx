@@ -299,6 +299,15 @@ export default function WhoAmIGame() {
 
   // Start new game
   const startNewGame = useCallback(() => {
+    // Clear target immediately so old photo disappears before new one loads
+    setTargetPlayer(null);
+    setGuesses([]);
+    setGameWon(false);
+    gameWonRef.current = false;
+    setSessionLikes(0);
+    setRevealedIndices([]);
+    processedGuessesRef.current.clear();
+
     fetch('/api/whoami/target')
       .then(r => {
         if (!r.ok) throw new Error('Network error');
@@ -307,12 +316,6 @@ export default function WhoAmIGame() {
       .then(player => {
         if (player) {
           setTargetPlayer(player);
-          setGuesses([]);
-          setGameWon(false);
-          gameWonRef.current = false; // Reset synchronous lock
-          setSessionLikes(0);
-          setRevealedIndices([]);
-          processedGuessesRef.current.clear();
           console.log('🎯 New target:', player.name);
         }
       })
@@ -806,7 +809,8 @@ export default function WhoAmIGame() {
                 style={{
                   width: '100%', height: '100%', objectFit: 'cover',
                   filter: gameWon ? 'none' : 'blur(12px) brightness(0.4)',
-                  transition: 'filter 1s ease-in-out',
+                  // Only animate the reveal (blur → clear), not the initial blur
+                  transition: gameWon ? 'filter 1s ease-in-out' : 'none',
                 }}
                 onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; }}
                 alt="Mystery Player"
