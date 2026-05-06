@@ -496,12 +496,32 @@ if (db && db.players) {
   console.log(`🕵️ Who Am I pool: top ${whoamiEligiblePlayers.length}/${candidates.length} players (min value: ${minValue})`);
 }
 
-// API: Get random player for Who Am I
+// Track used players to avoid repeats until all have been shown
+const whoamiUsedIds = new Set();
+
+// API: Get random player for Who Am I (no repeats until all 250 exhausted)
 app.get('/api/whoami/target', (req, res) => {
   if (whoamiEligiblePlayers.length === 0) {
     return res.status(503).json({ error: 'No eligible players' });
   }
-  const random = whoamiEligiblePlayers[Math.floor(Math.random() * whoamiEligiblePlayers.length)];
+
+  // Allow manual reset via ?reset=true
+  if (req.query.reset === 'true') {
+    whoamiUsedIds.clear();
+  }
+
+  // Reset if all players have been used
+  if (whoamiUsedIds.size >= whoamiEligiblePlayers.length) {
+    console.log(`🔄 Who Am I: all ${whoamiEligiblePlayers.length} players used, resetting pool`);
+    whoamiUsedIds.clear();
+  }
+
+  // Pick from unused players only
+  const available = whoamiEligiblePlayers.filter(p => !whoamiUsedIds.has(p.id));
+  const random = available[Math.floor(Math.random() * available.length)];
+  whoamiUsedIds.add(random.id);
+
+  console.log(`🕵️ Who Am I target: ${random.name} (${whoamiUsedIds.size}/${whoamiEligiblePlayers.length} used)`);
   res.json(random);
 });
 
