@@ -250,9 +250,9 @@ const comparePlayers = (guessed, target) => {
   return results;
 };
 
-// Check if guess matches target
+// Check if guess matches target (by player ID for accuracy)
 const isCorrectGuess = (guessed, target) => {
-  return normalize(guessed.name) === normalize(target.name);
+  return guessed.id === target.id;
 };
 
 export default function WhoAmIGame() {
@@ -379,7 +379,7 @@ export default function WhoAmIGame() {
     
     let matchedPlayer = null;
     try {
-      const res = await fetch(`/api/whoami/search?q=${encodeURIComponent(guessName)}`);
+      const res = await fetch(`/api/whoami/search?q=${encodeURIComponent(guessName)}&targetId=${targetPlayer.id}`);
       if (res.ok) {
         const data = await res.json();
         matchedPlayer = data.player;
