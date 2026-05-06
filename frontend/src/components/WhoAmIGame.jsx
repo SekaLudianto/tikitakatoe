@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Trophy, ArrowUp, ArrowDown, RefreshCw, Type } from 'lucide-react';
+import { Trophy, ArrowUp, ArrowDown, RefreshCw, Type, Maximize, Minimize } from 'lucide-react';
 import './WhoAmIGame.css';
 
 // Normalize player name for comparison
@@ -271,6 +271,7 @@ export default function WhoAmIGame() {
   const [liveStatus, setLiveStatus] = useState({ connected: false, username: '' });
   const [sessionLikes, setSessionLikes] = useState(0);
   const [revealedIndices, setRevealedIndices] = useState([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
@@ -279,6 +280,21 @@ export default function WhoAmIGame() {
   // Use ref for handleGuess so WebSocket always calls the latest version
   const handleGuessRef = useRef(null);
   const handleRevealLetterRef = useRef(null);
+
+  // Fullscreen change listener
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   // Start new game
   const startNewGame = useCallback(() => {
@@ -658,6 +674,23 @@ export default function WhoAmIGame() {
               onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
             >
               <RefreshCw size={16} />
+            </button>
+            <button 
+              onClick={toggleFullscreen}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                width: '32px', height: '32px',
+                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                color: '#fff', cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            >
+              {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
             </button>
             <div className="live-badge" data-connected={liveStatus.connected}>
               {liveStatus.connected ? '🟢 LIVE' : '🔴 OFFLINE'}
