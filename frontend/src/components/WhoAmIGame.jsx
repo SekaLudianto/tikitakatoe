@@ -299,11 +299,13 @@ export default function WhoAmIGame() {
 
   // Start new game
   const startNewGame = useCallback(() => {
-    // Clear target immediately so old photo disappears before new one loads
+    // Lock guesses immediately — keep locked until new target is ready
+    gameWonRef.current = true;
+
+    // Clear UI state immediately
     setTargetPlayer(null);
     setGuesses([]);
     setGameWon(false);
-    gameWonRef.current = false;
     setSessionLikes(0);
     setRevealedIndices([]);
     processedGuessesRef.current.clear();
@@ -316,6 +318,8 @@ export default function WhoAmIGame() {
       .then(player => {
         if (player) {
           setTargetPlayer(player);
+          // Unlock guesses only AFTER new target is set
+          gameWonRef.current = false;
           console.log('🎯 New target:', player.name);
         }
       })
