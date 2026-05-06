@@ -542,7 +542,7 @@ export default function WhoAmIGame() {
     }
   };
 
-  // Country to flag code mapping
+  // Country to flag code mapping (complete - all 176 countries in DB)
   const COUNTRY_FLAG_CODES = {
     'Brazil': 'br', 'Argentina': 'ar', 'France': 'fr', 'Germany': 'de', 'Spain': 'es',
     'England': 'gb-eng', 'Portugal': 'pt', 'Italy': 'it', 'Netherlands': 'nl', 'Belgium': 'be',
@@ -564,9 +564,32 @@ export default function WhoAmIGame() {
     'Albania': 'al', 'Georgia': 'ge', 'Armenia': 'am', 'Kosovo': 'xk', 'Luxembourg': 'lu',
     'Lithuania': 'lt', 'Latvia': 'lv', 'Estonia': 'ee', 'Cyprus': 'cy', 'Malta': 'mt',
     'Israel': 'il', 'Uzbekistan': 'uz', 'China': 'cn', 'Thailand': 'th',
+    // Batch 2: all remaining countries from database
+    'Afghanistan': 'af', 'Andorra': 'ad', 'Antigua and Barbuda': 'ag', 'Aruba': 'aw',
+    'Azerbaijan': 'az', 'Bangladesh': 'bd', 'Barbados': 'bb', 'Belarus': 'by', 'Bermuda': 'bm',
+    'Bolivia': 'bo', 'Brunei Darussalam': 'bn', 'Bulgaria': 'bg', 'Burundi': 'bi',
+    'Central African Republic': 'cf', 'Chad': 'td', 'Chinese Taipei': 'tw', 'Comoros': 'km',
+    "Cote d'Ivoire": 'ci', 'Cuba': 'cu', 'Curacao': 'cw', 'Dominican Republic': 'do',
+    'El Salvador': 'sv', 'Eritrea': 'er', 'Faroe Islands': 'fo', 'French Guiana': 'gf',
+    'Grenada': 'gd', 'Guadeloupe': 'gp', 'Guatemala': 'gt', 'Guinea-Bissau': 'gw',
+    'Guyana': 'gy', 'Haiti': 'ht', 'Iraq': 'iq', 'Ireland': 'ie', 'Jordan': 'jo',
+    'Kazakhstan': 'kz', 'Kenya': 'ke', 'Korea, North': 'kp', 'Korea, South': 'kr',
+    'Kyrgyzstan': 'kg', 'Lebanon': 'lb', 'Liberia': 'lr', 'Libya': 'ly',
+    'Liechtenstein': 'li', 'Macao': 'mo', 'Madagascar': 'mg', 'Malawi': 'mw',
+    'Malaysia': 'my', 'Martinique': 'mq', 'Mauritania': 'mr', 'Mauritius': 'mu',
+    'Moldova': 'md', 'Monaco': 'mc', 'Montserrat': 'ms', 'New Caledonia': 'nc',
+    'New Zealand': 'nz', 'Niger': 'ne', 'Pakistan': 'pk', 'Palestine': 'ps', 'Panama': 'pa',
+    'Papua New Guinea': 'pg', 'Philippines': 'ph', 'Puerto Rico': 'pr', 'Qatar': 'qa',
+    'Russia': 'ru', 'Rwanda': 'rw', 'Réunion': 're', 'Saint-Martin': 'mf',
+    'San Marino': 'sm', 'Sao Tome and Principe': 'st', 'Seychelles': 'sc',
+    'Sierra Leone': 'sl', 'Somalia': 'so', 'Southern Sudan': 'ss', 'St. Lucia': 'lc',
+    'Suriname': 'sr', 'Syria': 'sy', 'Tahiti': 'pf', 'Tajikistan': 'tj', 'Tanzania': 'tz',
+    'The Gambia': 'gm', 'Trinidad and Tobago': 'tt', 'Turkmenistan': 'tm',
+    'Türkiye': 'tr', 'Uganda': 'ug', 'United Arab Emirates': 'ae',
+    'United States': 'us', 'Vanuatu': 'vu', 'Vietnam': 'vn',
   };
 
-  // League code to logo file mapping
+  // League code to logo file mapping (complete - all 32 leagues in DB)
   const LEAGUE_LOGO_MAP = {
     'GB1': 'gb1', 'ES1': 'es1', 'IT1': 'it1', 'L1': 'l1', 'FR1': 'fr1',
     'NL1': 'nl1', 'PO1': 'po1', 'TR1': 'tr1', 'MLS1': 'mls1', 'SA1': 'sa1',
@@ -574,6 +597,9 @@ export default function WhoAmIGame() {
     'AUS1': 'aus1', 'RSK1': 'rsk1', 'CL': 'cl', 'EL': 'el',
     'SC1': 'sc1', 'BE1': 'be1', 'GR1': 'gr1', 'RU1': 'ru1', 'UKR1': 'ukr1',
     'GB2': 'gb2', 'ES2': 'es2', 'IT2': 'it2', 'L2': 'l2', 'FR2': 'fr2',
+    // Batch 2: remaining leagues
+    'A1': 'a1', 'C1': 'c1', 'COL1': 'col1', 'DK1': 'dk1', 'KR1': 'kr1',
+    'NO1': 'no1', 'PL1': 'pl1', 'RO1': 'ro1', 'SE1': 'se1', 'SER1': 'ser1', 'TS1': 'ts1',
   };
 
   // Render a single comparison box (compact, minimalist)
