@@ -67,6 +67,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .ball-icon {
@@ -1037,5 +1038,11 @@
   }
   .interaction-instant {
     font-size: 0.65rem;
+  }
+  .game-header h1 {
+    font-size: 1.5rem;
+  }
+  .ball-icon {
+    font-size: 1.3rem;
   }
 }
