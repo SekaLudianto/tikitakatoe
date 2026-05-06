@@ -469,7 +469,8 @@ const WHOAMI_VALID_CLUB_IDS = new Set([
 
 // Maximum number of top players for Who Am I pool (adjust as needed: 250, 500, etc.)
 const WHOAMI_POOL_SIZE = 250;
-const WHOAMI_MAX_AGE = 40; // Exclude clearly retired players still in DB
+const WHOAMI_MAX_AGE = 40;       // Exclude clearly retired players still in DB
+const WHOAMI_MIN_SEASON = 2025;  // Only players with data from this season or later
 
 // Pre-filter eligible players for Who Am I, then rank by market value (highest ever)
 let whoamiEligiblePlayers = [];
@@ -479,6 +480,7 @@ if (db && db.players) {
     p.currentClub.id &&
     WHOAMI_VALID_CLUB_IDS.has(p.currentClub.id) &&
     p.marketValue && p.marketValue > 0 &&
+    p.lastSeason && p.lastSeason >= WHOAMI_MIN_SEASON &&
     p.age && p.age > 0 && p.age <= WHOAMI_MAX_AGE &&
     p.shirtNumber && p.shirtNumber > 0 &&
     p.detailedPosition
