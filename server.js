@@ -347,19 +347,16 @@ app.get('/api/grid-counts', (req, res) => {
   });
 });
 
-// Top European league codes for Who Am I target selection
+// Big Five European league codes for Who Am I target selection (2025/2026 season)
 const WHOAMI_TARGET_LEAGUES = new Set([
   'GB1', // Premier League
   'ES1', // La Liga
   'IT1', // Serie A
   'L1',  // Bundesliga
   'FR1', // Ligue 1
-  'NL1', // Eredivisie
-  'PO1', // Liga Portugal
-  'TR1', // Süper Lig
 ]);
 
-// Pre-filter eligible players for Who Am I (active, top EU league, has data)
+// Pre-filter eligible players for Who Am I (active, Big 5 league, has data)
 let whoamiEligiblePlayers = [];
 if (db && db.players) {
   whoamiEligiblePlayers = db.players.filter(p => 
@@ -370,7 +367,7 @@ if (db && db.players) {
     p.shirtNumber && p.shirtNumber > 0 &&
     p.detailedPosition
   );
-  console.log(`🕵️ Who Am I eligible players: ${whoamiEligiblePlayers.length} (top EU leagues, active, with full data)`);
+  console.log(`🕵️ Who Am I eligible players: ${whoamiEligiblePlayers.length} (Big 5 EU leagues, active, with full data)`);
 }
 
 // API: Get random player for Who Am I
