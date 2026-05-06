@@ -142,25 +142,82 @@ start_game() {
     echo -e "  ${WHITE}${BOLD} Start Tiki Taka Toe${NC}"
     echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
     echo ""
-    echo -ne "  Enter TikTok username: ${CYAN}@${NC}"
-    read -r username
-    
-    if [ -z "$username" ]; then
-        echo -e "  ${RED}[!] Username cannot be empty!${NC}"
-        sleep 2
-        return
-    fi
-    
+    echo -e "  ${CYAN}[1]${NC}  Direct TikTok (via tiktok-live-connector)"
+    echo -e "  ${CYAN}[2]${NC}  IndoFinity Relay (via PC WebSocket)"
+    echo -e "  ${RED}[0]${NC}  Back to Main Menu"
     echo ""
-    echo -e "  ${GREEN}▶${NC} Starting game for ${CYAN}@${username}${NC}..."
-    echo -e "  ${GREEN}▶${NC} Frontend: ${WHITE}http://localhost:5173${NC}"
-    echo ""
-    echo -e "  ${DIM}Press Ctrl+C to stop the game.${NC}"
-    echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
-    echo ""
-    cd "$PROJECT_DIR"
-    node start.js "$username"
-    press_continue
+    echo -ne "  ${WHITE}Select server mode ${CYAN}[0-2]${WHITE}: ${NC}"
+    read -r server_mode
+
+    case $server_mode in
+        1)
+            echo ""
+            echo -ne "  Enter TikTok username: ${CYAN}@${NC}"
+            read -r username
+            
+            if [ -z "$username" ]; then
+                echo -e "  ${RED}[!] Username cannot be empty!${NC}"
+                sleep 2
+                return
+            fi
+            
+            echo ""
+            echo -e "  ${GREEN}▶${NC} Mode: ${WHITE}Direct TikTok${NC}"
+            echo -e "  ${GREEN}▶${NC} Target: ${CYAN}@${username}${NC}"
+            echo -e "  ${GREEN}▶${NC} Frontend: ${WHITE}http://localhost:5173${NC}"
+            echo ""
+            echo -e "  ${DIM}Press Ctrl+C to stop the game.${NC}"
+            echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
+            echo ""
+            cd "$PROJECT_DIR"
+            node start.js "$username"
+            press_continue
+            ;;
+        2)
+            echo ""
+            echo -e "  ${DIM}IndoFinity runs on your PC.${NC}"
+            echo -e "  ${DIM}Make sure IndoFinity is running and connected to TikTok Live.${NC}"
+            echo ""
+            echo -ne "  Enter PC IP Address (e.g. 192.168.1.5): ${CYAN}"
+            read -r pc_ip
+            echo -ne "${NC}"
+            
+            if [ -z "$pc_ip" ]; then
+                echo -e "  ${RED}[!] IP Address cannot be empty!${NC}"
+                sleep 2
+                return
+            fi
+            
+            echo -ne "  Port (default 62024): ${CYAN}"
+            read -r pc_port
+            echo -ne "${NC}"
+            
+            if [ -z "$pc_port" ]; then
+                pc_port="62024"
+            fi
+            
+            local ws_url="ws://${pc_ip}:${pc_port}"
+            
+            echo ""
+            echo -e "  ${GREEN}▶${NC} Mode: ${WHITE}IndoFinity Relay${NC}"
+            echo -e "  ${GREEN}▶${NC} Connecting to: ${CYAN}${ws_url}${NC}"
+            echo -e "  ${GREEN}▶${NC} Frontend: ${WHITE}http://localhost:5173${NC}"
+            echo ""
+            echo -e "  ${DIM}Press Ctrl+C to stop the game.${NC}"
+            echo -e "  ${YELLOW}══════════════════════════════════════${NC}"
+            echo ""
+            cd "$PROJECT_DIR"
+            node start.js --indofinity "$ws_url"
+            press_continue
+            ;;
+        0|"")
+            return
+            ;;
+        *)
+            echo -e "  ${RED}[!] Invalid option.${NC}"
+            sleep 1
+            ;;
+    esac
 }
 
 full_setup() {

@@ -1,48 +1,57 @@
 /**
  * BOX2BOX - Backend Server
  * 
- * Connects to a TikTok LIVE stream via tiktok-live-connector,
- * reads chat comments, and broadcasts them to the frontend
+ * Connects to a TikTok LIVE stream via tiktok-live-connector OR
+ * listens to events from IndoFinity WebSocket relay on PC.
+ * 
+ * Reads chat comments, and broadcasts them to the frontend
  * via WebSocket so the game can process guesses in real-time.
  * 
  * Also provides an HTTP API for player validation against
  * the full tiki-taka-toe-db.json database.
  * 
  * Usage:
- *   node server.js <tiktok_username>
+ *   node server.js <tiktok_username>                 (Direct TikTok)
+ *   node server.js --indofinity <ws://IP:PORT>       (IndoFinity Relay)
  * 
  * Example:
  *   node server.js @cristiano
+ *   node server.js --indofinity ws://192.168.1.5:62024
  */
 
 const { WebcastPushConnection } = require('tiktok-live-connector');
-const { WebSocketServer } = require('ws');
+const { WebSocketServer, WebSocket: WsClient } = require('ws');
 const express = require('express');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
 // ==================== CONFIG ====================
-const TIKTOK_USERNAME = process.argv[2] || '';
+const args = process.argv.slice(2);
+const indofinityIdx = args.indexOf('--indofinity');
+const INDOFINITY_MODE = indofinityIdx !== -1;
+const INDOFINITY_URL = INDOFINITY_MODE ? (args[indofinityIdx + 1] || 'ws://localhost:62024') : null;
+const TIKTOK_USERNAME = INDOFINITY_MODE ? '' : (args[0] || '');
 const WS_PORT = 3001;
 
-if (!TIKTOK_USERNAME) {
+if (!INDOFINITY_MODE && !TIKTOK_USERNAME) {
   console.log('');
   console.log('⚽ BOX2BOX - TikTok Live Server');
   console.log('─'.repeat(40));
   console.log('');
   console.log('Usage:');
-  console.log('  node server.js <tiktok_username>');
+  console.log('  node server.js <tiktok_username>                (Direct TikTok)');
+  console.log('  node server.js --indofinity <ws://IP:PORT>      (IndoFinity Relay)');
   console.log('');
   console.log('Example:');
   console.log('  node server.js @cristiano');
-  console.log('  node server.js cristiano');
+  console.log('  node server.js --indofinity ws://192.168.1.5:62024');
   console.log('');
   process.exit(1);
 }
 
 // Clean username (remove @ if present)
-const username = TIKTOK_USERNAME.replace('@', '');
+const username = INDOFINITY_MODE ? 'IndoFinity' : TIKTOK_USERNAME.replace('@', '');
 
 // ==================== LOAD DATABASE ====================
 console.log('📦 Loading player database...');
@@ -458,7 +467,7 @@ function broadcast(data) {
   }
 }
 
-// ==================== TIKTOK LIVE CONNECTOR ====================
+// ==================== LIVE CONNECTOR ====================
 let tiktokConnected = false;
 let lastViewerCount = 0;
 let tiktokLive = null;
@@ -469,7 +478,12 @@ const BASE_RECONNECT_DELAY = 5000; // Start at 5 seconds
 console.log('');
 console.log('⚽ BOX2BOX - TikTok Live Server');
 console.log('─'.repeat(40));
-console.log(`📺 Target: @${username}`);
+if (INDOFINITY_MODE) {
+  console.log(`🖥️ Mode: IndoFinity Relay`);
+  console.log(`🔗 IndoFinity: ${INDOFINITY_URL}`);
+} else {
+  console.log(`📺 Target: @${username}`);
+}
 console.log(`🔗 WebSocket: ws://localhost:${WS_PORT}`);
 console.log(`🌐 API: http://localhost:${WS_PORT}/api`);
 console.log('');
@@ -650,12 +664,143 @@ function scheduleReconnect() {
   });
 
   setTimeout(() => {
-    connectToTikTok();
+    if (INDOFINITY_MODE) {
+      connectToIndoFinity();
+    } else {
+      connectToTikTok();
+    }
   }, delay);
 }
 
-// Initial connection
-connectToTikTok();
+// ==================== INDOFINITY RELAY MODE ====================
+let indofinityWs = null;
+let indofinityReconnectTimer = null;
+
+function connectToIndoFinity() {
+  if (indofinityWs) {
+    try { indofinityWs.close(); } catch (e) {}
+  }
+
+  console.log(`🔄 Connecting to IndoFinity at ${INDOFINITY_URL}...`);
+  indofinityWs = new WsClient(INDOFINITY_URL);
+
+  indofinityWs.on('open', () => {
+    tiktokConnected = true;
+    reconnectAttempts = 0;
+    console.log(`✅ Connected to IndoFinity!`);
+    console.log('');
+    console.log('💬 Listening for events via IndoFinity...');
+    console.log('');
+
+    broadcast({
+      type: 'status',
+      connected: true,
+      username: 'IndoFinity',
+    });
+  });
+
+  indofinityWs.on('message', (raw) => {
+    try {
+      const message = JSON.parse(raw.toString());
+      const { event, data: eventData } = message;
+
+      if (event === 'chat') {
+        const user = {
+          uniqueId: eventData.uniqueId,
+          nickname: eventData.nickname,
+          profilePictureUrl: eventData.profilePictureUrl,
+          followRole: eventData.followRole,
+          isModerator: eventData.isModerator,
+          isSubscriber: eventData.isSubscriber,
+        };
+        console.log(`💬 @${user.uniqueId}: ${eventData.comment}`);
+        broadcast({
+          type: 'chat',
+          comment: eventData.comment,
+          user: user,
+          timestamp: Date.now(),
+        });
+      } else if (event === 'member') {
+        broadcast({
+          type: 'member',
+          uniqueId: eventData.uniqueId,
+          nickname: eventData.nickname,
+          timestamp: Date.now(),
+        });
+      } else if (event === 'roomUser') {
+        lastViewerCount = eventData.viewerCount || 0;
+        broadcast({
+          type: 'viewerCount',
+          count: lastViewerCount,
+        });
+      } else if (event === 'like') {
+        broadcast({
+          type: 'like',
+          uniqueId: eventData.uniqueId,
+          nickname: eventData.nickname,
+          likeCount: eventData.likeCount,
+          totalLikeCount: eventData.totalLikeCount,
+        });
+      } else if (event === 'gift') {
+        // Only process when the gift sequence ends (repeatEnd = true)
+        if (eventData.giftType === 1 && !eventData.repeatEnd) return;
+
+        console.log(`🎁 @${eventData.uniqueId} sent ${eventData.repeatCount}x ${eventData.giftName}`);
+        broadcast({
+          type: 'gift',
+          uniqueId: eventData.uniqueId,
+          nickname: eventData.nickname,
+          giftName: eventData.giftName,
+          giftId: eventData.giftId,
+          repeatCount: eventData.repeatCount,
+          diamondCount: eventData.diamondCount,
+          timestamp: Date.now(),
+        });
+      } else if (event === 'follow') {
+        console.log(`👤 @${eventData.uniqueId} followed!`);
+        broadcast({
+          type: 'follow',
+          uniqueId: eventData.uniqueId,
+          nickname: eventData.nickname,
+        });
+      } else if (event === 'streamEnd') {
+        console.log('📡 Stream ended (via IndoFinity)');
+        tiktokConnected = false;
+        broadcast({ type: 'status', connected: false, reason: 'Stream ended' });
+      }
+      // Donation events from IndoFinity (saweria, sociabuzz, trakteer, etc.)
+      else if (['saweria', 'sociabuzz', 'trakteer', 'tako', 'bagibagi', 'sibagi', 'tiptap'].includes(event)) {
+        console.log(`💰 Donation via ${event}:`, eventData);
+        broadcast({
+          type: 'donation',
+          platform: event,
+          data: eventData,
+          timestamp: Date.now(),
+        });
+      }
+    } catch (e) {
+      console.error('IndoFinity message parse error:', e.message);
+    }
+  });
+
+  indofinityWs.on('close', () => {
+    console.log('🔌 IndoFinity connection closed');
+    tiktokConnected = false;
+    broadcast({ type: 'status', connected: false, reason: 'IndoFinity disconnected' });
+    scheduleReconnect();
+  });
+
+  indofinityWs.on('error', (err) => {
+    console.error('⚠️ IndoFinity error:', err.message);
+  });
+}
+
+// Initial connection — choose mode
+if (INDOFINITY_MODE) {
+  connectToIndoFinity();
+} else {
+  connectToTikTok();
+}
 
 // ==================== START SERVER ====================
 server.listen(WS_PORT, () => {
