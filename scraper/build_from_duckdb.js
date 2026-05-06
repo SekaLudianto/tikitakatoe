@@ -110,17 +110,47 @@ const CLUB_ALIASES = {
   243: 'Santos',
   10: 'Grêmio',
   1062: 'Internacional',
+  1269: 'PEC Zwolle',
+  1329: 'Heracles Almelo',
+  1330: 'Go Ahead Eagles',
+  6423: 'Excelsior',
 };
 
 function shortenClubName(id, officialName) {
   if (CLUB_ALIASES[id]) return CLUB_ALIASES[id];
   
   let name = officialName;
+  
+  // Handle long Dutch club names with "Combinatie" - take first word + city
+  // e.g. "Prins Hendrik Ende Desespereert Nimmer Combinatie Zwolle" -> "PEC Zwolle"
+  if (name.includes(' Combinatie ')) {
+    const parts = name.split(' ');
+    const combinatieIndex = parts.findIndex(p => p === 'Combinatie');
+    if (combinatieIndex > 0 && combinatieIndex < parts.length - 1) {
+      const firstWord = parts[0];
+      const city = parts[combinatieIndex + 1];
+      // If first word looks like an acronym (all caps or contains capitals), use it
+      if (firstWord === firstWord.toUpperCase() || /[A-Z]{2,}/.test(firstWord)) {
+        name = `${firstWord} ${city}`;
+      } else {
+        // Otherwise just use city or common abbreviation
+        name = `${city}`;
+      }
+    }
+  }
+  
+  // Handle "N.V. Maatschappij" pattern (Dutch corporate suffixes)
+  name = name.replace(/N\.V\.\s*/g, '');
+  name = name.replace(/Maatschappij\s*/gi, '');
+  name = name.replace(/Besloten\s*/gi, '');
+  
+  // Common replacements
   name = name.replace('Football Club', 'FC');
   name = name.replace('Club de Fútbol', 'CF');
   name = name.replace('Associazione Calcio', 'AC');
   name = name.replace('Associazione Sportiva', 'AS');
   name = name.replace('Società Sportiva', 'SS');
+  name = name.replace('Società di Ginnastica e Scherma', 'SGS');
   name = name.replace('Fútbol Club', 'FC');
   name = name.replace('Olympique de ', '');
   name = name.replace('Olympique ', '');
@@ -131,7 +161,7 @@ function shortenClubName(id, officialName) {
 // Kita akan mengambil TOP 150 klub secara dinamis dari DuckDB
 let TOP_CLUB_IDS = {};
 
-const TOP_POSITIONS = ['Attack', 'Midfield', 'Defender', 'Goalkeeper'];
+const TOP_POSITIONS = ['CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LW', 'RW', 'CF', 'GK'];
 const TOP_COMPETITIONS = {
   // European club competitions
   'GB1': { name: 'Premier League', emoji: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', tier: 'all' },
@@ -155,7 +185,7 @@ const TOP_COMPETITIONS = {
   'RSK1': { name: 'K League 1', emoji: '🇰🇷', tier: 'hard' },
 };
 const ICONIC_JERSEY_NUMBERS = ['1', '2', '3', '5', '6', '7', '8', '9', '10', '11'];
-const FOOT_VALUES = ['left', 'right', 'both'];
+const HEIGHT_CATEGORIES = ['short', 'medium', 'tall'];
 const OUTPUT_DIR = path.join(__dirname, '..', 'data');
 
 // Promisify duckdb query
@@ -167,6 +197,23 @@ function runQuery(conn, sql) {
     });
   });
 }
+
+// Map DuckDB sub_position to short abbreviation
+const POS_ABBREVIATION = {
+  'Centre-Back': 'CB',
+  'Centre-Forward': 'CF',
+  'Goalkeeper': 'GK',
+  'Central Midfield': 'CM',
+  'Defensive Midfield': 'CDM',
+  'Right-Back': 'RB',
+  'Attacking Midfield': 'CAM',
+  'Left-Back': 'LB',
+  'Left Winger': 'LW',
+  'Right Winger': 'RW',
+  'Right Midfield': 'RM',
+  'Left Midfield': 'LM',
+  'Second Striker': 'SS',
+};
 
 const COUNTRY_CODES = {
   'Brazil': 'br', 'Argentina': 'ar', 'France': 'fr', 'Germany': 'de', 'Spain': 'es',
@@ -191,7 +238,7 @@ function generateSampleGrids(db, countPerDifficulty = 50) {
   const result = { easy: [], medium: [], hard: [] };
 
   // All available column types with weights (higher weight = more likely to appear)
-  const ALL_COL_TYPES = ['club', 'country', 'position', 'competition', 'jersey', 'foot'];
+  const ALL_COL_TYPES = ['club', 'country', 'position', 'competition', 'jersey', 'height'];
 
   function lookupIntersection(clubId, col) {
     let key, answers;
@@ -210,9 +257,9 @@ function generateSampleGrids(db, countPerDifficulty = 50) {
     } else if (col.type === 'jersey') {
       key = `${clubId}-jersey:${col.id}`;
       answers = db.jerseyIntersections[key];
-    } else if (col.type === 'foot') {
-      key = `${clubId}-foot:${col.id}`;
-      answers = db.footIntersections[key];
+    } else if (col.type === 'height') {
+      key = `${clubId}-height:${col.id}`;
+      answers = db.heightIntersections[key];
     }
     return answers;
   }
@@ -230,8 +277,7 @@ function generateSampleGrids(db, countPerDifficulty = 50) {
       return { type: 'country', id: country, name: country, logoUrl: `/flags/${code}.png` };
     } else if (type === 'position') {
       const pos = db.positions[Math.floor(Math.random() * db.positions.length)];
-      const posText = pos === 'Goalkeeper' ? 'GK' : pos === 'Defender' ? 'DEF' : pos === 'Midfield' ? 'MID' : 'ATT';
-      return { type: 'position', id: pos, name: pos, textLogo: posText };
+      return { type: 'position', id: pos, name: pos, textLogo: pos };
     } else if (type === 'competition') {
       const compIds = Object.keys(db.competitionIntersections)
         .map(k => k.split('-comp:')[1])
@@ -256,11 +302,11 @@ function generateSampleGrids(db, countPerDifficulty = 50) {
     } else if (type === 'jersey') {
       const num = ICONIC_JERSEY_NUMBERS[Math.floor(Math.random() * ICONIC_JERSEY_NUMBERS.length)];
       return { type: 'jersey', id: num, name: `#${num}` };
-    } else if (type === 'foot') {
-      const foot = FOOT_VALUES[Math.floor(Math.random() * FOOT_VALUES.length)];
-      const footLabel = foot === 'left' ? 'Left Foot' : foot === 'right' ? 'Right Foot' : 'Both Feet';
-      const footEmoji = foot === 'left' ? '⬅️🦶' : foot === 'right' ? '➡🦶' : '🦶🦶';
-      return { type: 'foot', id: foot, name: footLabel, textLogo: footEmoji };
+    } else if (type === 'height') {
+      const height = HEIGHT_CATEGORIES[Math.floor(Math.random() * HEIGHT_CATEGORIES.length)];
+      const heightLabel = height === 'short' ? '<175cm' : height === 'medium' ? '175-185cm' : '>185cm';
+      const heightIcon = height === 'short' ? 'S' : height === 'medium' ? 'M' : 'L';
+      return { type: 'height', id: height, name: heightLabel, textLogo: heightIcon };
     }
     return null;
   }
@@ -483,13 +529,14 @@ async function main() {
       p.name, 
       p.country_of_citizenship as country, 
       p.position, 
-      p.foot,
+      p.sub_position,
+      p.height_in_cm,
       p.image_url as imageUrl, 
       LIST(DISTINCT a.player_club_id) as club_ids
     FROM players p
     JOIN appearances a ON p.player_id = a.player_id
     WHERE a.player_club_id IN (${topClubIdsList})
-    GROUP BY p.player_id, p.name, p.country_of_citizenship, p.position, p.foot, p.image_url
+    GROUP BY p.player_id, p.name, p.country_of_citizenship, p.position, p.sub_position, p.height_in_cm, p.image_url
   `;
   const rawPlayers = await runQuery(conn, query);
   console.log(`   ✅ ${rawPlayers.length} pemain dari appearances`);
@@ -545,7 +592,7 @@ async function main() {
     for (let i = 0; i < extraIdArr.length; i += 500) {
       const batch = extraIdArr.slice(i, i + 500);
       const extraQuery = `
-        SELECT player_id, name, country_of_citizenship as country, position, foot, image_url as imageUrl
+        SELECT player_id, name, country_of_citizenship as country, position, sub_position, height_in_cm, image_url as imageUrl
         FROM players WHERE player_id IN (${batch.join(',')})
       `;
       const extraPlayers = await runQuery(conn, extraQuery);
@@ -583,12 +630,22 @@ async function main() {
     const validClubs = [...allClubIds].map(id => ({ id, name: TOP_CLUB_IDS[id] }));
     if (validClubs.length < 1) continue;
 
+    // Calculate height category
+    let heightCategory = '';
+    const heightCm = parseInt(row.height_in_cm);
+    if (heightCm) {
+      if (heightCm < 175) heightCategory = 'short';
+      else if (heightCm <= 185) heightCategory = 'medium';
+      else heightCategory = 'tall';
+    }
+    
     gamePlayers.push({
       id: row.player_id,
       name: row.name || 'Unknown',
       country: row.country || '',
       position: row.position || '',
-      foot: row.foot || '',
+      detailedPosition: POS_ABBREVIATION[row.sub_position] || row.sub_position || '',
+      height: heightCategory,
       imageUrl: row.imageUrl || '',
       clubs: validClubs
     });
@@ -654,7 +711,7 @@ async function main() {
   const positionIntersections = {};
   const competitionIntersections = {};
   const jerseyIntersections = {};
-  const footIntersections = {};
+  const heightIntersections = {};
   
   for (const player of gamePlayers) {
     const clubIds = player.clubs.map(c => c.id);
@@ -678,21 +735,22 @@ async function main() {
       }
     }
     
-    // Club-Position
-    if (player.position && TOP_POSITIONS.includes(player.position)) {
+    // Club-Position (using detailedPosition: CB, RB, LW, etc.)
+    const detPos = player.detailedPosition || '';
+    if (detPos && TOP_POSITIONS.includes(detPos)) {
       for (const club of player.clubs) {
-        const key = `${club.id}-position:${player.position}`;
+        const key = `${club.id}-position:${detPos}`;
         if (!positionIntersections[key]) positionIntersections[key] = [];
         positionIntersections[key].push(pEntry);
       }
     }
 
-    // Club-Foot
-    if (player.foot && FOOT_VALUES.includes(player.foot)) {
+    // Club-Height
+    if (player.height && HEIGHT_CATEGORIES.includes(player.height)) {
       for (const club of player.clubs) {
-        const key = `${club.id}-foot:${player.foot}`;
-        if (!footIntersections[key]) footIntersections[key] = [];
-        footIntersections[key].push(pEntry);
+        const key = `${club.id}-height:${player.height}`;
+        if (!heightIntersections[key]) heightIntersections[key] = [];
+        heightIntersections[key].push(pEntry);
       }
     }
 
@@ -756,7 +814,7 @@ async function main() {
   console.log(`   Club-Position: ${Object.keys(positionIntersections).length}`);
   console.log(`   Club-Competition: ${Object.keys(competitionIntersections).length}`);
   console.log(`   Club-Jersey: ${Object.keys(jerseyIntersections).length}`);
-  console.log(`   Club-Foot: ${Object.keys(footIntersections).length}`);
+  console.log(`   Club-Height: ${Object.keys(heightIntersections).length}`);
 
   const gameDb = {
     meta: {
@@ -770,14 +828,14 @@ async function main() {
     positions: TOP_POSITIONS,
     competitions: TOP_COMPETITIONS,
     jerseyNumbers: ICONIC_JERSEY_NUMBERS,
-    footValues: FOOT_VALUES,
+    heightCategories: HEIGHT_CATEGORIES,
     players: gamePlayers,
     intersections,
     countryIntersections,
     positionIntersections,
     competitionIntersections,
     jerseyIntersections,
-    footIntersections,
+    heightIntersections,
   };
 
   if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });

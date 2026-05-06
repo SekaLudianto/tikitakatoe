@@ -21,7 +21,7 @@ console.log('📦 Loading data...');
 const gridsData = JSON.parse(fs.readFileSync(gridsPath, 'utf-8'));
 const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 
-const VALID_HEADER_TYPES = ['club', 'country', 'position', 'competition', 'jersey', 'foot'];
+const VALID_HEADER_TYPES = ['club', 'country', 'position', 'competition', 'jersey', 'height'];
 
 function normalize(str) {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -59,11 +59,11 @@ function lookupIntersection(rowHeader, colHeader) {
   if (h1.type === 'jersey' && h2.type === 'club') {
     return (db.jerseyIntersections || {})[`${h2.id}-jersey:${h1.id}`] || [];
   }
-  if (h1.type === 'club' && h2.type === 'foot') {
-    return (db.footIntersections || {})[`${h1.id}-foot:${h2.id}`] || [];
+  if (h1.type === 'club' && h2.type === 'height') {
+    return (db.heightIntersections || {})[`${h1.id}-height:${h2.id}`] || [];
   }
-  if (h1.type === 'foot' && h2.type === 'club') {
-    return (db.footIntersections || {})[`${h2.id}-foot:${h1.id}`] || [];
+  if (h1.type === 'height' && h2.type === 'club') {
+    return (db.heightIntersections || {})[`${h2.id}-height:${h1.id}`] || [];
   }
   return null; // unknown combo
 }
@@ -226,7 +226,7 @@ console.log(`   Club-Country intersections: ${Object.keys(db.countryIntersection
 console.log(`   Club-Position intersections: ${Object.keys(db.positionIntersections || {}).length}`);
 console.log(`   Club-Competition intersections: ${Object.keys(db.competitionIntersections || {}).length}`);
 console.log(`   Club-Jersey intersections: ${Object.keys(db.jerseyIntersections || {}).length}`);
-console.log(`   Club-Foot intersections: ${Object.keys(db.footIntersections || {}).length}`);
+console.log(`   Club-Height intersections: ${Object.keys(db.heightIntersections || {}).length}`);
 
 // Final summary
 console.log(`\n${'═'.repeat(50)}`);

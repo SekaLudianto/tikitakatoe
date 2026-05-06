@@ -19,6 +19,7 @@ const saveGlobalLeaderboard = (data) => {
 };
 
 function getInitials(name) {
+  if (!name || typeof name !== 'string') return '?';
   return name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase();
 }
 
@@ -108,9 +109,83 @@ function JerseyBadge({ number }) {
   );
 }
 
+function HeightBadge({ category }) {
+  const labels = { short: '<175cm', medium: '175-185cm', tall: '>185cm' };
+  const colors = { short: '#f59e0b', medium: '#3b82f6', tall: '#10b981' };
+  return (
+    <div className="height-badge" title={`Height: ${labels[category]}`}>
+      <svg viewBox="0 0 60 80" className="height-svg">
+        <rect x="15" y="10" width="30" height="60" rx="5" fill={colors[category]} opacity="0.3" />
+        <circle cx="30" cy="25" r="8" fill={colors[category]} />
+        <rect x="22" y="35" width="16" height="30" rx="3" fill={colors[category]} />
+      </svg>
+      <span className="height-label">{labels[category]}</span>
+    </div>
+  );
+}
+
+function PositionBadge({ position }) {
+  let categoryClass = 'pos-mid'; // default green (CM, CDM, CAM, LM, RM)
+  if (['GK'].includes(position)) categoryClass = 'pos-gk';
+  else if (['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(position)) categoryClass = 'pos-def';
+  else if (['ST', 'CF', 'LW', 'RW', 'SS', 'ATT'].includes(position)) categoryClass = 'pos-att';
+  
+  return (
+    <div className={`position-badge ${categoryClass}`} title={`Position: ${position}`}>
+      <span className="pos-text">{position}</span>
+    </div>
+  );
+}
+
+const SilverBall = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" style={{ marginRight: '6px', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.5))' }}>
+    <defs>
+      <radialGradient id="silverGlow" cx="35%" cy="25%" r="65%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="30%" stopColor="#d1d5db" />
+        <stop offset="70%" stopColor="#9ca3af" />
+        <stop offset="100%" stopColor="#4b5563" />
+      </radialGradient>
+    </defs>
+    <circle cx="12" cy="12" r="11" fill="url(#silverGlow)" />
+    <polygon points="12,7 16,10 14.5,15 9.5,15 8,10" fill="#374151" />
+    <line x1="12" y1="7" x2="12" y2="1" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="16" y1="10" x2="21.5" y2="7.5" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="14.5" y1="15" x2="18.5" y2="20" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="9.5" y1="15" x2="5.5" y2="20" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="8" y1="10" x2="2.5" y2="7.5" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
+const GoldBall = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" style={{ marginRight: '6px', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.5))' }}>
+    <defs>
+      <radialGradient id="goldGlow" cx="35%" cy="25%" r="65%">
+        <stop offset="0%" stopColor="#fef08a" />
+        <stop offset="30%" stopColor="#facc15" />
+        <stop offset="70%" stopColor="#eab308" />
+        <stop offset="100%" stopColor="#a16207" />
+      </radialGradient>
+    </defs>
+    <circle cx="12" cy="12" r="11" fill="url(#goldGlow)" />
+    <polygon points="12,7 16,10 14.5,15 9.5,15 8,10" fill="#422006" />
+    <line x1="12" y1="7" x2="12" y2="1" stroke="#422006" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="16" y1="10" x2="21.5" y2="7.5" stroke="#422006" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="14.5" y1="15" x2="18.5" y2="20" stroke="#422006" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="9.5" y1="15" x2="5.5" y2="20" stroke="#422006" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="8" y1="10" x2="2.5" y2="7.5" stroke="#422006" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+
 function renderHeader(header) {
   if (header.type === 'jersey') {
     return <JerseyBadge number={header.id} />;
+  }
+  if (header.type === 'height') {
+    return <HeightBadge category={header.id} />;
+  }
+  if (header.type === 'position') {
+    return <PositionBadge position={header.textLogo} />;
   }
   if (header.type === 'competition' && header.logoUrl) {
     return <ClubLogo src={header.logoUrl} name={header.name} className="club-logo" />;
@@ -149,7 +224,6 @@ export default function TikiTakaGame() {
   const wsRef = useRef(null);
   const gridRef = useRef(null);
   const cellsRef = useRef(cells);
-  const usedPlayersRef = useRef(new Set()); // Track used player names to prevent same player filling multiple cells
   const processedGiftsRef = useRef(new Set()); // Dedup gifts from multiple WS connections
 
   // Keep refs in sync
@@ -194,7 +268,6 @@ export default function TikiTakaGame() {
           setCountdown(15);
           setMvpStats([]);
           setRoundLikes(0);
-          usedPlayersRef.current = new Set();
         }
       })
       .catch(err => {
@@ -248,6 +321,9 @@ export default function TikiTakaGame() {
   useEffect(() => {
     let ws;
     let reconnectTimer;
+    let reconnectAttempts = 0;
+    const BASE_DELAY = 3000;
+    const MAX_DELAY = 30000;
 
     function connect() {
       ws = new WebSocket('ws://localhost:3001');
@@ -255,6 +331,7 @@ export default function TikiTakaGame() {
 
       ws.onopen = () => {
         console.log('🔌 Connected to backend');
+        reconnectAttempts = 0; // Reset on successful connection
       };
 
       ws.onmessage = (event) => {
@@ -285,7 +362,7 @@ export default function TikiTakaGame() {
           if (msg.type === 'like') {
             setRoundLikes(prev => prev + msg.likeCount);
           }
-          
+
           if (msg.type === 'gift') {
             // Deduplicate gifts (React Strict Mode creates 2 WS connections in dev)
             const giftKey = `${msg.uniqueId}_${msg.giftName}_${msg.timestamp}`;
@@ -294,23 +371,19 @@ export default function TikiTakaGame() {
             // Keep set small: remove old entries after 5 seconds
             setTimeout(() => processedGiftsRef.current.delete(giftKey), 5000);
 
-            addFeedMessage(msg.uniqueId, `sent ${msg.repeatCount}x ${msg.giftName} 🎁`, false);
-            
-            const giftName = msg.giftName.toLowerCase();
-            
-            // Massive Reveal (Rose / Mawar) — 1 coin each, target 5
-            if (giftName.includes('rose') || giftName.includes('mawar')) {
-              setRoseVotes(prev => prev + msg.repeatCount);
-            }
-            
-            // Level Up / Skip (Finger Heart) — 5 coins each, target 2
-            if (giftName.includes('finger heart') || giftName.includes('hati')) {
-               setLevelVotes(prev => prev + msg.repeatCount);
-            }
-
-            // Level Down (Overreact) — 5 coins each, target 2
-            if (giftName.includes('overreact')) {
-               setLevelDownVotes(prev => prev + msg.repeatCount);
+            // Option A: Filter by gift value to avoid clashing
+            if (msg.diamondCount >= 1) {
+              const amount = msg.diamondCount * msg.repeatCount;
+              if (msg.diamondCount <= 10) {
+                // 1 - 10 coins: Reveal Cell
+                setRoseVotes(prev => prev + amount);
+              } else if (msg.diamondCount <= 99) {
+                // 11 - 99 coins: Level Up (Silver)
+                setLevelVotes(prev => prev + amount);
+              } else {
+                // 100+ coins: Level Down (Gold)
+                setLevelDownVotes(prev => prev + amount);
+              }
             }
           }
         } catch (e) {
@@ -319,9 +392,11 @@ export default function TikiTakaGame() {
       };
 
       ws.onclose = () => {
-        console.log('🔌 Disconnected from backend, reconnecting in 3s...');
+        reconnectAttempts++;
+        const delay = Math.min(BASE_DELAY * Math.pow(2, reconnectAttempts - 1), MAX_DELAY);
+        console.log(`🔌 Disconnected from backend, reconnecting in ${delay/1000}s... (attempt #${reconnectAttempts})`);
         setLiveStatus(prev => ({ ...prev, connected: false }));
-        reconnectTimer = setTimeout(connect, 3000);
+        reconnectTimer = setTimeout(connect, delay);
       };
 
       ws.onerror = () => {
@@ -340,7 +415,7 @@ export default function TikiTakaGame() {
   // Handle auto-hint on 1000 likes
   useEffect(() => {
     if (roundLikes >= 1000 && !isCompleted) {
-      setRoundLikes(prev => prev - 1000); // Reset tapi biarkan lebihannya
+      setRoundLikes(prev => Math.max(0, prev - 1000)); // Reset tapi biarkan lebihannya
       
       setHints(prev => {
         const newHints = [...prev];
@@ -362,11 +437,11 @@ export default function TikiTakaGame() {
     }
   }, [roundLikes, isCompleted]);
 
-  // Handle Level Up (Finger Heart)
-  const VOTES_NEEDED = 2;
+  // Handle Level Up (Silver Ball)
+  const LEVEL_UP_NEEDED = 50;
   useEffect(() => {
-    if (levelVotes >= VOTES_NEEDED) {
-      setLevelVotes(prev => prev - VOTES_NEEDED);
+    if (levelVotes >= LEVEL_UP_NEEDED) {
+      setLevelVotes(prev => prev - LEVEL_UP_NEEDED);
       const order = ['easy', 'medium', 'hard'];
       const nextIdx = (order.indexOf(difficulty) + 1) % order.length;
       const nextDiff = order[nextIdx];
@@ -384,10 +459,11 @@ export default function TikiTakaGame() {
     }
   }, [levelVotes, difficulty, startNewGame]);
 
-  // Handle Level Down (Coffee)
+  // Handle Level Down (Gold Ball)
+  const LEVEL_DOWN_NEEDED = 100;
   useEffect(() => {
-    if (levelDownVotes >= VOTES_NEEDED) {
-      setLevelDownVotes(prev => prev - VOTES_NEEDED);
+    if (levelDownVotes >= LEVEL_DOWN_NEEDED) {
+      setLevelDownVotes(prev => prev - LEVEL_DOWN_NEEDED);
       const order = ['easy', 'medium', 'hard'];
       const prevIdx = (order.indexOf(difficulty) - 1 + order.length) % order.length;
       const prevDiff = order[prevIdx];
@@ -405,11 +481,11 @@ export default function TikiTakaGame() {
     }
   }, [levelDownVotes, difficulty, startNewGame]);
 
-  // Handle Massive Reveal (Rose)
-  const ROSE_NEEDED = 5;
+  // Handle Massive Reveal (Regular Ball)
+  const REVEAL_NEEDED = 10;
   useEffect(() => {
-    if (roseVotes >= ROSE_NEEDED && !isCompleted) {
-      setRoseVotes(prev => prev - ROSE_NEEDED);
+    if (roseVotes >= REVEAL_NEEDED && !isCompleted) {
+      setRoseVotes(prev => prev - REVEAL_NEEDED);
       setHints(prev => {
         const newHints = [...prev];
         let changed = false;
@@ -517,13 +593,6 @@ export default function TikiTakaGame() {
         // Re-check cells haven't changed during await
         const latestCells = cellsRef.current;
         if (latestCells[i] !== null) continue;
-
-        // Runtime block: prevent same player from filling multiple cells
-        const normalizedMatchName = match.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-        if (usedPlayersRef.current.has(normalizedMatchName)) {
-          continue; // Skip — this player already used in another cell
-        }
-        usedPlayersRef.current.add(normalizedMatchName);
 
         const newCells = [...latestCells];
         newCells[i] = {
@@ -645,18 +714,19 @@ export default function TikiTakaGame() {
   };
 
   const getHint = (name, level) => {
-    if (!name || level === 0) return '?';
-    const parts = name.split(' ');
+    if (!name || typeof name !== 'string' || level === 0) return '?';
+    const parts = name.split(' ').filter(p => p.length > 0);
+    if (parts.length === 0) return '?';
     if (level === 1) {
-      return parts.map(p => p[0].toUpperCase() + '.').join(' ');
+      return parts.map(p => p[0]?.toUpperCase() + '.').join(' ');
     }
     if (level === 2) {
       return parts.map((p, i) => {
         if (i === parts.length - 1) { // last name
           if (p.length <= 2) return p;
-          return p[0].toUpperCase() + ' ' + '_ '.repeat(p.length - 2).trim() + ' ' + p[p.length - 1].toLowerCase();
+          return p[0]?.toUpperCase() + ' ' + '_ '.repeat(p.length - 2).trim() + ' ' + p[p.length - 1]?.toLowerCase();
         }
-        return p[0].toUpperCase() + '.';
+        return p[0]?.toUpperCase() + '.';
       }).join(' ');
     }
     return '?';
@@ -702,19 +772,19 @@ export default function TikiTakaGame() {
           <div className="difficulty-selector">
             <button 
               className={`diff-btn ${difficulty === 'easy' ? 'active easy' : ''}`}
-              onClick={() => { setDifficulty('easy'); startNewGame(); }}
+              onClick={() => { setDifficulty('easy'); startNewGame('easy'); }}
             >
               EASY
             </button>
             <button 
               className={`diff-btn ${difficulty === 'medium' ? 'active medium' : ''}`}
-              onClick={() => { setDifficulty('medium'); startNewGame(); }}
+              onClick={() => { setDifficulty('medium'); startNewGame('medium'); }}
             >
               MEDIUM
             </button>
             <button 
               className={`diff-btn ${difficulty === 'hard' ? 'active hard' : ''}`}
-              onClick={() => { setDifficulty('hard'); startNewGame(); }}
+              onClick={() => { setDifficulty('hard'); startNewGame('hard'); }}
             >
               HARD
             </button>
@@ -736,9 +806,9 @@ export default function TikiTakaGame() {
                         {mvp.profilePictureUrl ? (
                           <img src={mvp.profilePictureUrl} alt="avatar" className="mvp-avatar" />
                         ) : (
-                          <div className="mvp-avatar-placeholder">{mvp.nickname.charAt(0)}</div>
+                          <div className="mvp-avatar-placeholder">{(mvp.nickname || '?').charAt(0)}</div>
                         )}
-                        <div className="mvp-name">{mvp.nickname}</div>
+                        <div className="mvp-name">{mvp.nickname || mvp.uniqueId || 'Unknown'}</div>
                         <div className="mvp-score">{mvp.score} pt</div>
                       </div>
                     ))}
@@ -751,9 +821,9 @@ export default function TikiTakaGame() {
                         {mvp.profilePictureUrl ? (
                           <img src={mvp.profilePictureUrl} alt="avatar" className="mvp-avatar" />
                         ) : (
-                          <div className="mvp-avatar-placeholder">{mvp.nickname.charAt(0)}</div>
+                          <div className="mvp-avatar-placeholder">{(mvp.nickname || '?').charAt(0)}</div>
                         )}
-                        <div className="mvp-name">{mvp.nickname}</div>
+                        <div className="mvp-name">{mvp.nickname || mvp.uniqueId || 'Unknown'}</div>
                         <div className="mvp-score">{mvp.score} pt</div>
                       </div>
                     ))}
@@ -781,9 +851,9 @@ export default function TikiTakaGame() {
               {globalStats[0].profilePictureUrl ? (
                 <img src={globalStats[0].profilePictureUrl} alt="GOAT" className="top-global-avatar" />
               ) : (
-                <div className="top-global-avatar-placeholder">{globalStats[0].nickname.charAt(0)}</div>
+                <div className="top-global-avatar-placeholder">{(globalStats[0].nickname || '?').charAt(0)}</div>
               )}
-              <div className="top-global-name">{globalStats[0].nickname}</div>
+              <div className="top-global-name">{globalStats[0].nickname || globalStats[0].uniqueId || 'Unknown'}</div>
             </div>
           )}
 
@@ -791,7 +861,7 @@ export default function TikiTakaGame() {
             {gridData.cols.map((col, idx) => (
               <div key={`col-${idx}`} className="header-cell">
                 {renderHeader(col)}
-                {col.type !== 'jersey' && <span className="club-name">{col.name}</span>}
+                {col.type !== 'jersey' && col.type !== 'height' && col.type !== 'position' && <span className="club-name">{col.name}</span>}
               </div>
             ))}
           </div>
@@ -800,7 +870,7 @@ export default function TikiTakaGame() {
             {gridData.rows.map((row, idx) => (
               <div key={`row-${idx}`} className="header-cell">
                 {renderHeader(row)}
-                {row.type !== 'jersey' && <span className="club-name">{row.name}</span>}
+                {row.type !== 'jersey' && row.type !== 'height' && row.type !== 'position' && <span className="club-name">{row.name}</span>}
               </div>
             ))}
           </div>
@@ -854,29 +924,29 @@ export default function TikiTakaGame() {
           <div className="interaction-row-bottom">
             <div className="interaction-col">
               <div className="interaction-label" style={{ color: '#fb7185' }}>
-                <span className="gift-icon">🌹</span> 
-                {roseVotes} / {ROSE_NEEDED} Reveal
+                <span className="gift-icon" style={{fontSize: '14px'}}>⚽</span> 
+                {roseVotes} / {REVEAL_NEEDED} Reveal
               </div>
               <div className="progress-bar">
-                <div className="progress-fill" style={{ background: 'linear-gradient(90deg, #f43f5e, #fb7185)', boxShadow: '0 0 8px rgba(244, 63, 94, 0.5)', width: `${Math.min((roseVotes / ROSE_NEEDED) * 100, 100)}%` }}></div>
+                <div className="progress-fill" style={{ background: 'linear-gradient(90deg, #f43f5e, #fb7185)', boxShadow: '0 0 8px rgba(244, 63, 94, 0.5)', width: `${Math.min((roseVotes / REVEAL_NEEDED) * 100, 100)}%` }}></div>
               </div>
             </div>
             <div className="interaction-col finger-heart-col">
               <div className="interaction-label">
-                <img src="https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a4c4dc437fd3a6632aba149769491f49.png~tplv-obj.webp" alt="Finger Heart" className="gift-img-icon" /> 
-                {levelVotes} / {VOTES_NEEDED} Level Up
+                <SilverBall />
+                {levelVotes} / {LEVEL_UP_NEEDED} Level Up
               </div>
               <div className="progress-bar">
-                <div className="progress-fill level-fill" style={{ width: `${Math.min((levelVotes / VOTES_NEEDED) * 100, 100)}%` }}></div>
+                <div className="progress-fill level-fill" style={{ width: `${Math.min((levelVotes / LEVEL_UP_NEEDED) * 100, 100)}%` }}></div>
               </div>
             </div>
             <div className="interaction-col overreact-col">
-              <div className="interaction-label" style={{color: '#f87171'}}>
-                <img src="https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/dfd48ef1952b6d315856adda7705d02d.png~tplv-obj.webp" alt="Overreact" className="gift-img-icon" /> 
-                {levelDownVotes} / {VOTES_NEEDED} Level Down
+              <div className="interaction-label" style={{color: '#fbbf24'}}>
+                <GoldBall />
+                {levelDownVotes} / {LEVEL_DOWN_NEEDED} Level Down
               </div>
               <div className="progress-bar">
-                <div className="progress-fill" style={{ background: 'linear-gradient(90deg, #ef4444, #f87171)', boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)', width: `${Math.min((levelDownVotes / VOTES_NEEDED) * 100, 100)}%` }}></div>
+                <div className="progress-fill" style={{ background: 'linear-gradient(90deg, #ef4444, #f87171)', boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)', width: `${Math.min((levelDownVotes / LEVEL_DOWN_NEEDED) * 100, 100)}%` }}></div>
               </div>
             </div>
           </div>

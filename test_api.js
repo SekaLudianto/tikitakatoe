@@ -27,6 +27,13 @@ const testCases = [
     expectMatch: false,
   },
   {
+    name: 'Haaland at Manchester City x Tall (should match - he is >185cm)',
+    guess: 'Haaland',
+    header1: { type: 'club', id: 281, name: 'Manchester City' },
+    header2: { type: 'height', id: 'tall', name: '> 185cm' },
+    expectMatch: true,
+  },
+  {
     name: 'Invalid player "xyzabc123"',
     guess: 'xyzabc123',
     header1: { type: 'club', id: 46, name: 'Inter Milan' },

@@ -89,7 +89,7 @@ try {
   }
   
   console.log(`✅ Database loaded: ${db.players.length} players, ${Object.keys(db.intersections).length} club intersections`);
-  console.log(`   Competitions: ${Object.keys(db.competitionIntersections || {}).length}, Jerseys: ${Object.keys(db.jerseyIntersections || {}).length}, Foot: ${Object.keys(db.footIntersections || {}).length}`);
+  console.log(`   Competitions: ${Object.keys(db.competitionIntersections || {}).length}, Jerseys: ${Object.keys(db.jerseyIntersections || {}).length}, Height: ${Object.keys(db.heightIntersections || {}).length}`);
 } catch (err) {
   console.error('❌ Failed to load database:', err.message);
   process.exit(1);
@@ -112,19 +112,11 @@ function validateGuess(guess, header1, header2) {
   let lookupTable = null;
 
   if (header1.type === 'club' && header2.type === 'club') {
-    // Club x Club intersection
+    // Club x Club intersection - key is always sorted (min-max)
     const id1 = Number(header1.id);
     const id2 = Number(header2.id);
-    // Try both orderings since keys might be in either order
     intersectionKey = `${Math.min(id1, id2)}-${Math.max(id1, id2)}`;
     lookupTable = db.intersections;
-    // Also try the original ordering
-    if (!lookupTable[intersectionKey]) {
-      intersectionKey = `${id1}-${id2}`;
-    }
-    if (!lookupTable[intersectionKey]) {
-      intersectionKey = `${id2}-${id1}`;
-    }
   } else if (header1.type === 'club' && header2.type === 'country') {
     intersectionKey = `${header1.id}-country:${header2.name}`;
     lookupTable = db.countryIntersections;
@@ -149,12 +141,12 @@ function validateGuess(guess, header1, header2) {
   } else if (header1.type === 'jersey' && header2.type === 'club') {
     intersectionKey = `${header2.id}-jersey:${header1.id}`;
     lookupTable = db.jerseyIntersections;
-  } else if (header1.type === 'club' && header2.type === 'foot') {
-    intersectionKey = `${header1.id}-foot:${header2.id}`;
-    lookupTable = db.footIntersections;
-  } else if (header1.type === 'foot' && header2.type === 'club') {
-    intersectionKey = `${header2.id}-foot:${header1.id}`;
-    lookupTable = db.footIntersections;
+  } else if (header1.type === 'club' && header2.type === 'height') {
+    intersectionKey = `${header1.id}-height:${header2.id}`;
+    lookupTable = db.heightIntersections;
+  } else if (header1.type === 'height' && header2.type === 'club') {
+    intersectionKey = `${header2.id}-height:${header1.id}`;
+    lookupTable = db.heightIntersections;
   } else {
     // Any other combo: fallback to direct search
     return searchPlayersDirectly(searchName, header1, header2);
@@ -224,8 +216,8 @@ function matchesHeader(player, header) {
     return player.country === header.name;
   } else if (header.type === 'position') {
     return player.position === header.name;
-  } else if (header.type === 'foot') {
-    return player.foot === header.id;
+  } else if (header.type === 'height') {
+    return player.height === header.id;
   } else if (header.type === 'competition' || header.type === 'jersey') {
     // These require cross-referencing with intersection data — fall through
     // Direct search for these is less reliable, so check intersection tables
@@ -355,6 +347,63 @@ app.get('/api/grid-counts', (req, res) => {
   });
 });
 
+// Top European league codes for Who Am I target selection
+const WHOAMI_TARGET_LEAGUES = new Set([
+  'GB1', // Premier League
+  'ES1', // La Liga
+  'IT1', // Serie A
+  'L1',  // Bundesliga
+  'FR1', // Ligue 1
+  'NL1', // Eredivisie
+  'PO1', // Liga Portugal
+  'TR1', // Süper Lig
+]);
+
+// Pre-filter eligible players for Who Am I (active, top EU league, has data)
+let whoamiEligiblePlayers = [];
+if (db && db.players) {
+  whoamiEligiblePlayers = db.players.filter(p => 
+    p.currentClub && 
+    p.currentClub.league && 
+    WHOAMI_TARGET_LEAGUES.has(p.currentClub.league) &&
+    p.age && p.age > 0 &&
+    p.shirtNumber && p.shirtNumber > 0 &&
+    p.detailedPosition
+  );
+  console.log(`🕵️ Who Am I eligible players: ${whoamiEligiblePlayers.length} (top EU leagues, active, with full data)`);
+}
+
+// API: Get random player for Who Am I
+app.get('/api/whoami/target', (req, res) => {
+  if (whoamiEligiblePlayers.length === 0) {
+    return res.status(503).json({ error: 'No eligible players' });
+  }
+  const random = whoamiEligiblePlayers[Math.floor(Math.random() * whoamiEligiblePlayers.length)];
+  res.json(random);
+});
+
+// API: Search player by name for Who Am I
+app.get('/api/whoami/search', (req, res) => {
+  if (!db || !db.players) {
+    return res.status(503).json({ error: 'Database not loaded' });
+  }
+  const searchName = normalize(req.query.q || '');
+  if (searchName.length < 3) return res.json({ player: null });
+  
+  // Find matching player
+  const matchedPlayer = db.players.find(p => {
+    const normalizedName = normalize(p.name);
+    const nameParts = normalizedName.split(' ');
+    const lastName = nameParts[nameParts.length - 1];
+    
+    return normalizedName === searchName || 
+           lastName === searchName ||
+           (searchName.length >= 4 && nameParts.some(part => part === searchName));
+  });
+  
+  res.json({ player: matchedPlayer || null });
+});
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
@@ -385,6 +434,17 @@ wss.on('connection', (ws) => {
       if (msg.type === 'newgrid') {
         console.log('🎮 Frontend requested new grid');
         broadcast({ type: 'newgrid_ack' });
+      }
+      
+      // Allow injecting test chat messages (for testing without TikTok Live)
+      if (msg.type === 'inject_chat') {
+        console.log(`🧪 Injected chat: "${msg.comment}" from @${msg.user?.uniqueId || 'unknown'}`);
+        broadcast({
+          type: 'chat',
+          comment: msg.comment,
+          user: msg.user || { uniqueId: 'test', nickname: 'Test', profilePictureUrl: '' },
+          timestamp: Date.now(),
+        });
       }
     } catch (e) {
       // Ignore invalid messages
@@ -611,11 +671,13 @@ server.listen(WS_PORT, () => {
 // ==================== CRASH PROTECTION ====================
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception (server stays alive):', err.message);
+  console.error('   Stack:', err.stack);
   // Don't exit — keep the HTTP/WS server running
 });
 
-process.on('unhandledRejection', (reason) => {
+process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection (server stays alive):', reason);
+  console.error('   Promise:', promise);
   // Don't exit — keep the HTTP/WS server running
 });
 

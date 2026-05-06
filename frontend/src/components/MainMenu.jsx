@@ -27,15 +27,17 @@ export default function MainMenu({ onSelectMode }) {
             <button className="play-btn">Play Now</button>
           </div>
 
-          {/* Career Path Mode Card (Coming Soon) */}
-          <div className="mode-card disabled">
-            <div className="coming-soon-badge">Coming Soon</div>
-            <div className="mode-icon">🛫</div>
-            <h2 className="mode-title">Career Path</h2>
+          {/* Who Am I Mode Card */}
+          <div 
+            className="mode-card"
+            onClick={() => onSelectMode('whoami')}
+          >
+            <div className="mode-icon">�️</div>
+            <h2 className="mode-title">Who Am I?</h2>
             <p className="mode-desc">
-              "Who Am I?" style trivia. Viewers guess the player based on their sequence of transfer history and clubs.
+              Guess the mystery player! Get clues on nationality, league, club, position, age & shirt number.
             </p>
-            <button className="play-btn">Locked</button>
+            <button className="play-btn">Play Now</button>
           </div>
         </div>
       </div>
