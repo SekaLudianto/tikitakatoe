@@ -395,6 +395,12 @@ export default function WhoAmIGame() {
       console.log(`❌ "${guessName}" tidak ditemukan di database`);
       return;
     }
+
+    // Re-check after async fetch — game may have been won while we were fetching
+    if (gameWonRef.current) {
+      console.log(`⚠️ Game already won, discarding late guess: ${matchedPlayer.name}`);
+      return;
+    }
     
     console.log('✅ Found player:', matchedPlayer.name);
     
@@ -816,14 +822,21 @@ export default function WhoAmIGame() {
               <>
                 <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#10b981' }}>{targetPlayer?.name}</div>
                 <div style={{ color: '#fff', fontSize: '0.8rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {guesses[0]?.user && (
-                    <img 
-                      src={guesses[0].user.profilePictureUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${guesses[0].user.uniqueId}`} 
-                      style={{width: '20px', height: '20px', borderRadius: '50%'}} 
-                      alt=""
-                    />
-                  )}
-                  <span><strong style={{ color: '#eab308' }}>Winner:</strong> {guesses[0]?.user?.nickname || guesses[0]?.user?.uniqueId || 'Someone'}</span>
+                  {(() => {
+                    const winner = guesses.find(g => g.isCorrect);
+                    return winner?.user ? (
+                      <>
+                        <img 
+                          src={winner.user.profilePictureUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${winner.user.uniqueId}`} 
+                          style={{width: '20px', height: '20px', borderRadius: '50%'}} 
+                          alt=""
+                        />
+                        <span><strong style={{ color: '#eab308' }}>Winner:</strong> {winner.user.nickname || winner.user.uniqueId}</span>
+                      </>
+                    ) : (
+                      <span><strong style={{ color: '#eab308' }}>Winner:</strong> Someone</span>
+                    );
+                  })()}
                 </div>
               </>
             ) : (
