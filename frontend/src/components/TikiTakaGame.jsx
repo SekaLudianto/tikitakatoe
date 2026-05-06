@@ -450,7 +450,7 @@ export default function TikiTakaGame() {
       
       // Level Up Effect
       confetti({
-        particleCount: 150,
+        particleCount: 30,
         spread: 120,
         origin: { y: 0.4 },
         colors: ['#3b82f6', '#8b5cf6', '#ffffff'],
@@ -472,7 +472,7 @@ export default function TikiTakaGame() {
       
       // Level Down Effect
       confetti({
-        particleCount: 150,
+        particleCount: 30,
         spread: 120,
         origin: { y: 0.4 },
         colors: ['#ef4444', '#f87171', '#ffffff'],
@@ -499,7 +499,7 @@ export default function TikiTakaGame() {
       });
       // Confetti effect for massive reveal
       confetti({
-        particleCount: 80,
+        particleCount: 20,
         spread: 100,
         origin: { y: 0.5 },
         colors: ['#f43f5e', '#fb7185', '#ffffff'],
@@ -610,7 +610,7 @@ export default function TikiTakaGame() {
         if (completed) {
           // Immediate minimal confetti for the 9th correct answer
           confetti({
-            particleCount: 15,
+            particleCount: 5,
             spread: 50,
             origin: { y: 0.6 },
             colors: ['#10b981', '#ffffff', '#fbbf24'],
@@ -665,7 +665,7 @@ export default function TikiTakaGame() {
 
             // Light confetti burst for game completion (low-lag)
             confetti({
-              particleCount: 40,
+              particleCount: 15,
               spread: 80,
               origin: { y: 0.6 },
               colors: ['#f59e0b', '#fbbf24', '#ffffff'],
@@ -677,7 +677,7 @@ export default function TikiTakaGame() {
         } else {
           // Minimal confetti for correct answer (low-lag)
           confetti({
-            particleCount: 12,
+            particleCount: 5,
             spread: 45,
             origin: { y: 0.6 },
             colors: ['#10b981', '#ffffff', '#fbbf24'],

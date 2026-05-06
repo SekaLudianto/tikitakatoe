@@ -422,7 +422,7 @@ export default function WhoAmIGame() {
         return newLeaderboard;
       });
       confetti({
-        particleCount: 100,
+        particleCount: 25,
         spread: 70,
         origin: { y: 0.6 },
         colors: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']
